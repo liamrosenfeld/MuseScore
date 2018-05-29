@@ -1,1 +1,28 @@
-<svg id="musescore-icon-square" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 1000"><defs><style>.cls-1{stroke-miterlimit:10;stroke-width:1.56px;fill:url(#linear-gradient);stroke:url(#linear-gradient-2);}.cls-2{fill:#fff;}</style><linearGradient id="linear-gradient" x2="1000" y2="1000" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1f8fbd"/><stop offset="0.25" stop-color="#1f86bd"/><stop offset="0.53" stop-color="#1f77bd"/><stop offset="1" stop-color="#1c69b5"/></linearGradient><linearGradient id="linear-gradient-2" x1="1000.78" y1="-0.78" x2="-0.78" y2="1000.78" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><title>musescore-icon-square</title><rect id="Rectangle" class="cls-1" width="1000" height="1000"/><path id="mu" class="cls-2" d="M686.37,224c-76.92,0-139.78,62.86-139.78,139.77h46.59a93.19,93.19,0,0,1,186.37,0h46.59C826.14,286.82,763.28,224,686.37,224Zm0,116.48a23.3,23.3,0,1,0,23.29,23.29A23.3,23.3,0,0,0,686.37,340.44ZM290.34,387c-64.06,0-116.48,52.42-116.48,116.48v233h46.59v-233a69.89,69.89,0,1,1,139.77,0v233h46.6v-233a69.89,69.89,0,1,1,139.77,0v93.18c0,76.92,62.86,147.35,139.78,147.35s139.77-70.43,139.77-147.35V410.32H779.55V596.69c0,51.73-41.46,105.31-93.18,105.31s-93.19-53.58-93.19-105.31V503.51C593.18,439.45,540.76,387,476.7,387c-38.17,0-71.9,18.85-93.18,47.45C362.24,405.88,328.51,387,290.34,387Z"/></svg>
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 1000 1000" style="enable-background:new 0 0 1000 1000;" xml:space="preserve">
+<g id="musescore-icon-square">
+	<linearGradient id="Rectangle_1_" gradientUnits="userSpaceOnUse" x1="1.231023e-06" y1="-1.231017e-06" x2="1000" y2="1000">
+		<stop  offset="0" style="stop-color:#1F8FBD"/>
+		<stop  offset="0.255" style="stop-color:#1F86BD"/>
+		<stop  offset="0.5276" style="stop-color:#1F77BD"/>
+		<stop  offset="1" style="stop-color:#1C69B5"/>
+	</linearGradient>
+	<linearGradient id="Rectangle_2_" gradientUnits="userSpaceOnUse" x1="1000.7814" y1="-0.7814" x2="-0.7814" y2="1000.7814">
+		<stop  offset="0" style="stop-color:#FFFFFF"/>
+		<stop  offset="1" style="stop-color:#FFFFFF"/>
+	</linearGradient>
+	
+		<rect id="Rectangle" style="fill:url(#Rectangle_1_);stroke:url(#Rectangle_2_);stroke-width:1.5627;stroke-miterlimit:10;" width="1000" height="1000"/>
+	<path id="mu_2_" style="fill:#FFFFFF;" d="M686.4,224c-76.9,0-139.8,62.9-139.8,139.8h46.6c0-51.7,41.5-93.2,93.2-93.2
+		s93.2,41.5,93.2,93.2h46.6C826.1,286.8,763.3,224,686.4,224z M686.4,340.4c-12.9,0-23.3,10.4-23.3,23.3c0,12.9,10.4,23.3,23.3,23.3
+		s23.3-10.4,23.3-23.3C709.7,350.9,699.2,340.4,686.4,340.4z M290.3,387c-64.1,0-116.5,52.4-116.5,116.5v233h46.6v-233
+		c0-38.9,31-69.9,69.9-69.9s69.9,31,69.9,69.9v233h46.6v-233c0-38.9,31-69.9,69.9-69.9s69.9,31,69.9,69.9v69.9v23.3
+		c0,76.9,62.9,147.4,139.8,147.4s139.8-70.4,139.8-147.4V410.3h-46.6v186.4c0,51.7-41.5,105.3-93.2,105.3s-93.2-53.6-93.2-105.3
+		v-69.9v-23.3c0-64.1-52.4-116.5-116.5-116.5c-38.2,0-71.9,18.9-93.2,47.5C362.2,405.9,328.5,387,290.3,387z"/>
+</g>
+<g id="musescore-icon-round">
+</g>
+<g id="Guides" style="display:none;">
+</g>
+</svg>
