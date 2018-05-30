@@ -26,4 +26,5 @@ CMakeLists.txt.user.*
 vtest/html
 thirdparty/mupdf-qt
 vtest/LOG
+/mscore/data/splash.png
 
