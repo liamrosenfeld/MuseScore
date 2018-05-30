@@ -693,9 +693,16 @@ endif (APPLE)
 
 # Add the appropriate splash screen for the build
 if (MSCORE_UNSTABLE)
-    configure_file(../assets/splash-dev.png  mscore/data/splash.png COPYONLY) # Dev splash on development builds
+    if ("$ENV{BINTRAY_REPO_OWNER}" STREQUAL "musescore")
+        # This is a nightly build
+        configure_file(../assets/generated/splash-nightly.png ${PROJECT_SOURCE_DIR}/mscore/data/splash.png COPYONLY)
+    else ("$ENV{BINTRAY_REPO_OWNER}" STREQUAL "musescore")
+        # This is someone building on their own
+        configure_file(../assets/generated/splash-dev.png ${PROJECT_SOURCE_DIR}/mscore/data/splash.png COPYONLY)
+    endif ("$ENV{BINTRAY_REPO_OWNER}" STREQUAL "musescore")
 else (MSCORE_UNSTABLE)
-    configure_file(../assets/splash-stable.png  mscore/data/splash.png COPYONLY) # Standard splash on stable releases
+    # Standard splash on stable releases
+    configure_file(../assets/generated/splash-stable.png ${PROJECT_SOURCE_DIR}/mscore/data/splash.png COPYONLY)
 endif (MSCORE_UNSTABLE)
 
 ADD_DEPENDENCIES(${ExecutableName} mops1)
