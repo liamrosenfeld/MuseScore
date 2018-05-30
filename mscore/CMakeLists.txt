@@ -682,9 +682,9 @@ endif (APPLE)
 
 # Add the appropriate splash screen for the build
 if (MSCORE_UNSTABLE)
-    install(FILES ../assets/splash-dev.png RENAME splash.png DESTINATION ${PROJECT_BINARY_DIR}/mscore/data) # Dev splash on development builds
+    configure_file(/assets/splash-dev.png  mscore/data/splash.png COPYONLY) # Dev splash on development builds
 else (MSCORE_UNSTABLE)
-    install(FILES ../assets/splash-stable.png RENAME splash.png DESTINATION ${PROJECT_BINARY_DIR}/mscore/data)  # Standard splash on stable releases
+    configure_file(/assets/splash-stable.png  mscore/data/splash.png COPYONLY) # Standard splash on stable releases
 endif (MSCORE_UNSTABLE)
 
 ADD_DEPENDENCIES(${ExecutableName} mops1)
