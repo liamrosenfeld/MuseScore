@@ -28,24 +28,38 @@ if (CI)
     SET_PROPERTY(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif (CI)
 
+# Libraries linked via full path no longer produce linker search paths.
 cmake_policy(SET CMP0003 NEW)
 
-if(POLICY CMP0053)
-      cmake_policy(SET CMP0053 OLD)
-endif(POLICY CMP0053)
+# Don't to link executables to qtmain.lib automatically when they link to the QtCore IMPORTED target
+#if(POLICY CMP0020)
+#      cmake_policy(SET CMP0020 OLD)
+#endif(POLICY CMP0020)
 
+# Issue no warning non-existent target argument to get_targer_property() and set the result variable to a -NOTFOUND value rather than issuing a FATAL_ERROR
 if(POLICY CMP0045)
       cmake_policy(SET CMP0045 OLD)
 endif(POLICY CMP0045)
-
-if(POLICY CMP0020)
-      cmake_policy(SET CMP0020 OLD)
-endif(POLICY CMP0020)
 
 # Silently ignore non-existent dependencies (mops1, mops2)
 if(POLICY CMP0046)
       cmake_policy(SET CMP0046 OLD)
 endif(POLICY CMP0046)
+
+# Honor the legacy behavior for variable references and escape sequences
+if(POLICY CMP0053)
+      cmake_policy(SET CMP0053 OLD)
+endif(POLICY CMP0053)
+
+# RPATH settings on macOS do not affect install_name
+if(POLICY CMP0068)
+      cmake_policy(SET CMP0068 NEW)
+endif(POLICY CMP0068)
+
+# Don't process generated source files with AUTOMOC
+if(POLICY CMP0071)
+      cmake_policy(SET CMP0071 OLD)
+endif(POLICY CMP0071)
 
 #  Look for Qt5
 SET(QT_MIN_VERSION    "5.8.0")
@@ -58,7 +72,7 @@ include (GetCompilerVersion)
 include (CreatePrecompiledHeader)
 
 # For debugging the make system uncomment next line:
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_AUTOMOC     TRUE)
 set(MSCORE_UNSTABLE   TRUE)          # Mark as unstable
@@ -96,6 +110,7 @@ option(HAS_AUDIOFILE "Enable audio export" ON)                 # Requires libsnd
 option(USE_SYSTEM_QTSINGLEAPPLICATION "Use system QtSingleApplication" OFF)
 option(USE_SYSTEM_FREETYPE "Use system FreeType" OFF)          # requires freetype >= 2.5.2, does not work on win
 option(BUILD_LAME    "Enable MP3 export" ON)                   # Requires libmp3lame (non-free), call CMake with -DBUILD_LAME="OFF" to disable
+option(DOWNLOAD_SOUNDFONT "Download the latest soundfont version as part of the build process" ON)
 
 SET(JACK_LONGNAME "JACK (Jack Audio Connection Kit)")
 SET(JACK_MIN_VERSION "0.98.0")
@@ -106,6 +121,7 @@ option(BUILD_PORTAUDIO "Build with support for PortAudio audio backend." ON)
 option(BUILD_PORTMIDI "Build with support for PortAudio's MIDI features." ${BUILD_PORTAUDIO}) # PortAudio required
 option(BUILD_PCH "Build using precompiled headers." ON)
 option(BUILD_FOR_WINSTORE "Build for the Windows Store." OFF)
+option(COVERAGE "Build with instrumentation to record code coverage." OFF)
 
 if (APPLE)
       set (CMAKE_CXX_COMPILER   clang++)
@@ -130,36 +146,40 @@ if (APPLE)
       find_library(CoreMidiFW            NAMES CoreMIDI)
       find_library(SystemConfigurationFW NAMES SystemConfiguration)
       find_library(CoreServicesFW        NAMES CoreServices)
-      set(OsxFrameworks ${AudioToolboxFW} ${AudioUnitFW} ${CoreAudioFW} ${CoreMidiFW} ${SystemConfigurationFW} ${CoreServicesFW})
+      find_library(AppKit                NAMES AppKit)
+      set(OsxFrameworks ${AudioToolboxFW} ${AudioUnitFW} ${CoreAudioFW} ${CoreMidiFW} ${SystemConfigurationFW} ${CoreServicesFW} ${AppKit})
 endif (APPLE)
 
 #
-#     Check for GCC compiler >= 4.7
+#     Check for gcc compiler >= 4.8
 #
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
       if (${CMAKE_CXX_COMPILER_MAJOR} LESS 4
-        OR ((${CMAKE_CXX_COMPILER_MAJOR} EQUAL 4) AND (${CMAKE_CXX_COMPILER_MINOR} LESS 7)))
-            message(FATAL_ERROR "Bad GCC compiler version " ${CMAKE_CXX_COMPILER_VERSION}
-                  " >= 4.7 required")
+        OR ((${CMAKE_CXX_COMPILER_MAJOR} EQUAL 4) AND (${CMAKE_CXX_COMPILER_MINOR} LESS 8)))
+            message(FATAL_ERROR "bad gcc compiler version " ${CMAKE_CXX_COMPILER_VERSION}
+                  " >= 4.8 required")
       endif()
 endif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
+set(CMAKE_CXX_FLAGS_DEBUG   "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -DQT_NO_DEBUG")
+
 if (APPLE)
-   set(CMAKE_CXX_FLAGS_DEBUG   "-std=c++11 -fPIC -stdlib=libc++ -g -Wno-inconsistent-missing-override")
-   set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11 -fPIC -stdlib=libc++ -O2 -DNDEBUG -DQT_NO_DEBUG -Wno-inconsistent-missing-override")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -stdlib=libc++ -Wno-inconsistent-missing-override")
    # This is necessary for genManual to be executed during the build phase,
    # it needs to be able to get the Qt libs.
    SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
    SET(CMAKE_INSTALL_RPATH "${QT_INSTALL_PREFIX}/lib")
 else (APPLE)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
    if (MINGW)
       # -mno-ms-bitfields see #22048
-      set(CMAKE_CXX_FLAGS_DEBUG   "-std=c++11 -mno-ms-bitfields -g")
-      set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11 -mno-ms-bitfields -O2 -DNDEBUG -DQT_NO_DEBUG")
+      set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -mno-ms-bitfields")
       set(CMAKE_EXE_LINKER_FLAGS "-Wl,--large-address-aware")
    else (MINGW)
-      set(CMAKE_CXX_FLAGS_DEBUG   "-std=gnu++11 -fPIC -g -Wall -Wextra -Woverloaded-virtual")
-      set(CMAKE_CXX_FLAGS_RELEASE "-std=gnu++11 -fPIC -O2 -DNDEBUG -DQT_NO_DEBUG -DQT_NO_DEBUG_OUTPUT")
+      set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -fPIC")
+      set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -Woverloaded-virtual")
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT")
    endif (MINGW)
 endif(APPLE)
 
@@ -199,6 +219,50 @@ else (MINGW OR APPLE)
       SET(Mscore_INSTALL_NAME  "mscore${MSCORE_INSTALL_SUFFIX}-${MUSESCORE_VERSION}/")
       SET(Mscore_SHARE_NAME    "share/")
 endif (MINGW OR APPLE)
+
+# Download MuseScore SoundFont
+if (DOWNLOAD_SOUNDFONT)
+  set (SF_VERSION_REMOTE_FILE ${PROJECT_BINARY_DIR}/VERSION)
+  set (SF_VERSION_LOCAL_FILE ${PROJECT_SOURCE_DIR}/share/sound/VERSION)
+  set (DOWNLOAD_URL_ROOT "http://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General")
+  set (SOUND_DIRECTORY ${PROJECT_SOURCE_DIR}/share/sound)
+
+  file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/VERSION ${SF_VERSION_REMOTE_FILE} STATUS SF_VERSION_DL_STATUS_LIST)
+  list(GET SF_VERSION_DL_STATUS_LIST 0 SF_VERSION_DL_STATUS)
+
+  if(EXISTS ${SF_VERSION_REMOTE_FILE} AND SF_VERSION_DL_STATUS EQUAL 0)
+    file (STRINGS ${SF_VERSION_REMOTE_FILE} SF_VERSION_REMOTE)
+
+    set(SF_VERSION_LOCAL "0.0")
+    if (EXISTS ${SF_VERSION_LOCAL_FILE})
+      file (STRINGS ${SF_VERSION_LOCAL_FILE} SF_VERSION_LOCAL)
+    endif ()
+
+    string(COMPARE LESS ${SF_VERSION_LOCAL} ${SF_VERSION_REMOTE} DO_DOWNLOAD)
+    if (DO_DOWNLOAD)
+      message("Downloading version ${SF_VERSION_REMOTE} of the MuseScore SoundFont. Version is outdated ${SF_VERSION_LOCAL}.")
+      # delete soundfont and download new version
+      ## TODO check STATUS of downloads
+      file (REMOVE ${SOUND_DIRECTORY}/MuseScore_General.sf3
+                   ${SOUND_DIRECTORY}/MuseScore_General-License.md
+                   ${SOUND_DIRECTORY}/MuseScore_General-changelog.txt)
+      file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General.sf3 ${SOUND_DIRECTORY}/MuseScore_General.sf3 SHOW_PROGRESS STATUS SF_DL_STATUS)
+      list(GET SF_DL_STATUS 0 HTTP_STATUS)
+      if (NOT HTTP_STATUS EQUAL 0)
+        list(GET SF_DL_STATUS 1 HTTP_STATUS_TEXT)
+        message(FATAL_ERROR "Cannot download new soundfont. Error: ${HTTP_STATUS_TEXT}")
+      endif()
+      file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General-License.md ${SOUND_DIRECTORY}/MuseScore_General-License.md)
+      file(DOWNLOAD ${DOWNLOAD_URL_ROOT}/MuseScore_General-changelog.txt ${SOUND_DIRECTORY}/MuseScore_General-changelog.txt)
+      # replace VERSION file (in any case, delete VERSION file)
+      file (COPY ${SF_VERSION_REMOTE_FILE} DESTINATION ${SOUND_DIRECTORY})
+      file (REMOVE ${SF_VERSION_REMOTE_FILE})
+    else(DO_DOWNLOAD)
+      message("MuseScore SoundFont is up to date.")
+    endif(DO_DOWNLOAD)
+  endif()
+endif(DOWNLOAD_SOUNDFONT)
+
 
 if (BUILD_FOR_WINSTORE)
   set(FOR_WINSTORE 1)
@@ -465,7 +529,7 @@ if (NOT MINGW AND NOT APPLE)
                        build/rm-empty-dirs              DESTINATION bin COMPONENT portable ${SCRIPT_PERMS})
       install(FILES    build/Linux+BSD/portable/qt.conf DESTINATION bin COMPONENT portable)
     else (${MSCORE_INSTALL_SUFFIX} MATCHES "portable")
-      set(MAN_PORTABLE '.\"') # Comment out lines in man page that are only relevent to the portable version
+      set(MAN_PORTABLE .\\\") # comment out lines in man page that are only relevent to the portable version
     endif (${MSCORE_INSTALL_SUFFIX} MATCHES "portable")
     # Install desktop file (perform variable substitution first)
     configure_file(build/Linux+BSD/mscore.desktop.in mscore${MSCORE_INSTALL_SUFFIX}.desktop)
@@ -537,11 +601,8 @@ endif (NOT MINGW AND NOT APPLE)
 #
 
 # all.h is expected in PROJECT_BINARY_DIR by subdirs
-add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/all.h
-    COMMAND ${CMAKE_COMMAND}
-    ARGS -E copy ${PROJECT_SOURCE_DIR}/all.h ${PROJECT_BINARY_DIR}/all.h
-    DEPENDS ${PROJECT_SOURCE_DIR}/all.h
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/all.h ${PROJECT_BINARY_DIR}/all.h
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     )
 
@@ -554,13 +615,13 @@ ADD_CUSTOM_TARGET(mops2 DEPENDS ${PCH})
 ## Add subdirs
 ##
 subdirs(
-      mscore  awl bww2mxml share midi audiofile fluid mstyle libmscore synthesizer
+      mscore awl bww2mxml share midi audiofile fluid libmscore synthesizer
       effects thirdparty/rtf2html thirdparty/diff thirdparty/beatroot
       thirdparty/qzip thirdparty/kQOAuth
       )
 #      thirdparty/xmlstream
 
-string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
+string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (APPLE AND CMAKE_BUILD_TYPE MATCHES "DEBUG")
 # With xcode, we need to have all the targets in the same project
 add_subdirectory(mtest)

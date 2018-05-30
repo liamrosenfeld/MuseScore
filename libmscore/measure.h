@@ -62,11 +62,7 @@ enum class MeasureNumberMode : char {
 //   @P lastSegment     Segment       the last segment of the measure (read-only)
 //---------------------------------------------------------
 
-class Measure : public MeasureBase {
-      Q_GADGET
-      Q_PROPERTY(Ms::Segment* firstSegment READ first)
-      Q_PROPERTY(Ms::Segment* lastSegment  READ last)
-
+class Measure final : public MeasureBase {
       std::vector<MStaff*>  _mstaves;
       SegmentList _segments;
       Measure* _mmRest;       // multi measure rest which replaces a measure range
@@ -130,7 +126,8 @@ class Measure : public MeasureBase {
       void setCorrupted(int staffIdx, bool val);
       void setNoText(int staffIdx, Text*);
       Text* noText(int staffIdx) const;
-      Shape staffShape(int staffIdx) const;
+
+      const Shape& staffShape(int staffIdx) const;
       Shape& staffShape(int staffIdx);
       void createStaves(int);
 
@@ -234,9 +231,9 @@ class Measure : public MeasureBase {
       void setPlaybackCount(int val) { _playbackCount = val; }
       QRectF staffabbox(int staffIdx) const;
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       bool hasMMRest() const        { return _mmRest != 0; }
       bool isMMRest() const         { return _mmRestCount > 0; }

@@ -52,6 +52,8 @@ void PaletteBoxButton::contextMenuEvent(QContextMenuEvent* event)
       QAction* actionEdit       = menu.addAction(tr("Enable Editing"));
       actionEdit->setCheckable(true);
       actionEdit->setChecked(!palette->readOnly());
+      if (palette->isFilterActive())
+            actionEdit->setVisible(false);
 
       bool _systemPalette = palette->systemPalette();
       actionProperties->setDisabled(_systemPalette);
@@ -114,7 +116,7 @@ void PaletteBoxButton::changeEvent(QEvent* ev)
 
 void PaletteBoxButton::showPalette(bool visible)
       {
-      if (visible && preferences.singlePalette) {
+      if (visible && preferences.getBool(PREF_APP_USESINGLEPALETTE)) {
             // close all palettes
             emit closeAll();
             }

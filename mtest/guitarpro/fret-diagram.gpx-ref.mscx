@@ -33,7 +33,7 @@
         <shortName>Guit.</shortName>
         <trackName>Acoustic Guitar (Treble Clef)</trackName>
         <minPitchP>40</minPitchP>
-        <maxPitchP>83</maxPitchP>
+        <maxPitchP>84</maxPitchP>
         <minPitchA>40</minPitchA>
         <maxPitchA>83</maxPitchA>
         <transposeDiatonic>-7</transposeDiatonic>
@@ -105,9 +105,9 @@
           <sigD>8</sigD>
           </TimeSig>
         <Tempo>
-          <tempo>2</tempo>
+          <tempo>1.68333</tempo>
           <lid>4</lid>
-          <text><sym>metNoteQuarterUp</sym> = 120</text>
+          <text><sym>metNoteQuarterUp</sym> = 101</text>
           </Tempo>
         <Rest>
           <lid>5</lid>
@@ -970,7 +970,7 @@
           <shortName>Guit.</shortName>
           <trackName>Acoustic Guitar (Treble Clef)</trackName>
           <minPitchP>40</minPitchP>
-          <maxPitchP>83</maxPitchP>
+          <maxPitchP>84</maxPitchP>
           <minPitchA>40</minPitchA>
           <maxPitchA>83</maxPitchA>
           <transposeDiatonic>-7</transposeDiatonic>
@@ -1046,9 +1046,9 @@
             <sigD>8</sigD>
             </TimeSig>
           <Tempo>
-            <tempo>2</tempo>
+            <tempo>1.68333</tempo>
             <lid>4</lid>
-            <text><sym>metNoteQuarterUp</sym> = 120</text>
+            <text><sym>metNoteQuarterUp</sym> = 101</text>
             </Tempo>
           <Rest>
             <lid>5</lid>

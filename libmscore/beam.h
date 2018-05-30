@@ -15,6 +15,7 @@
 
 #include "element.h"
 #include "durationtype.h"
+#include "property.h"
 
 namespace Ms {
 
@@ -30,9 +31,7 @@ struct BeamFragment;
 //   @@ Beam
 //---------------------------------------------------------
 
-class Beam : public Element {
-      Q_GADGET
-
+class Beam final : public Element {
       QVector<ChordRest*> _elements;        // must be sorted by tick
       QVector<QLineF*> beamSegments;
       Direction _direction;
@@ -40,7 +39,6 @@ class Beam : public Element {
       bool _up;
       bool _distribute;                   // equal spacing of elements
       bool _noSlope;
-      PropertyFlags noSlopeStyle;
 
       bool _userModified[2];              // 0: auto/down  1: up
       bool _isGrace;
@@ -58,7 +56,6 @@ class Beam : public Element {
       int maxMove;
       TDuration maxDuration;
       qreal slope { 0.0 };
-
 
       void layout2(std::vector<ChordRest*>, SpannerSegmentType, int frag);
       bool twoBeamedNotes();
@@ -78,7 +75,7 @@ class Beam : public Element {
       Beam(const Beam&);
       ~Beam();
       virtual Beam* clone() const override         { return new Beam(*this); }
-      virtual ElementType type() const override  { return ElementType::BEAM; }
+      virtual ElementType type() const override    { return ElementType::BEAM; }
       virtual QPointF pagePos() const override;    ///< position in page coordinates
       virtual QPointF canvasPos() const override;  ///< position in page coordinates
 
@@ -142,14 +139,10 @@ class Beam : public Element {
 
       qreal beamDist() const              { return _beamDist; }
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID id) const override;
-      virtual PropertyFlags propertyFlags(P_ID) const override;
-      virtual void resetProperty(P_ID id) override;
-      virtual StyleIdx getPropertyStyle(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid id) const override;
 
-      virtual void styleChanged() override;
       bool isGrace() const { return _isGrace; }  // for debugger
       bool cross() const   { return _cross; }
       virtual Shape shape() const override;

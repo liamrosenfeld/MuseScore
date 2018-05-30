@@ -53,8 +53,7 @@ void ElementLayout::layout(Element* e) const
       QPointF o(offset(e->spatium()));
       qreal w = 0.0;
       qreal h = 0.0;
-      bool frameText = e->type() == ElementType::TEXT
-         && static_cast<Text*>(e)->layoutToParentWidth() && e->parent();
+      bool frameText = e->isTextBase() && toTextBase(e)->layoutToParentWidth() && e->parent();
       QPointF p;
       if (frameText)
             h = e->parent()->height();
@@ -235,10 +234,14 @@ bool ElementLayout::readProperties(XmlReader& e)
 
 void ElementLayout::restyle(const ElementLayout& ol, const ElementLayout& nl)
       {
-      if ((ol._align & Align::HMASK) == (_align & Align::HMASK))
+      if ((ol._align & Align::HMASK) == (_align & Align::HMASK)) {
+            _align = Align(_align & Align::VMASK); // unset all HMASK-flags before setting new flags
             _align = Align(_align | Align(int(nl._align) & int(Align::HMASK)));
-      if ((ol._align & Align::VMASK) == (_align & Align::VMASK))
+            }
+      if ((ol._align & Align::VMASK) == (_align & Align::VMASK)) {
+            _align = Align(_align & Align::HMASK); // unset all VMASK-flags before setting new flags
             _align = _align | Align((int(nl._align) & int(Align::VMASK)));
+            }
       if (ol._offset == _offset)
             _offset = nl._offset;
       if (_offsetType == ol._offsetType)

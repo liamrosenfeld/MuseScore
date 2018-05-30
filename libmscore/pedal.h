@@ -23,11 +23,7 @@ class Pedal;
 //   @@ PedalSegment
 //---------------------------------------------------------
 
-class PedalSegment : public TextLineBaseSegment {
-      Q_GADGET
-
-   protected:
-
+class PedalSegment final : public TextLineBaseSegment {
    public:
       PedalSegment(Score* s) : TextLineBaseSegment(s) {}
       virtual ElementType type() const override       { return ElementType::PEDAL_SEGMENT; }
@@ -42,9 +38,7 @@ class PedalSegment : public TextLineBaseSegment {
 //   @@ Pedal
 //---------------------------------------------------------
 
-class Pedal : public TextLineBase {
-      Q_GADGET
-
+class Pedal final : public TextLineBase {
    protected:
       QPointF linePos(Grip, System**) const override;
 
@@ -53,10 +47,10 @@ class Pedal : public TextLineBase {
       virtual Pedal* clone() const override     { return new Pedal(*this);   }
       virtual ElementType type() const override { return ElementType::PEDAL; }
       virtual void read(XmlReader&) override;
+      virtual void write(XmlWriter& xml) const override;
       LineSegment* createLineSegment();
       virtual void setYoff(qreal) override;
-      virtual QVariant propertyDefault(P_ID propertyId) const override;
-      virtual StyleIdx getPropertyStyle(P_ID) const override;
+      virtual QVariant propertyDefault(Pid propertyId) const override;
 
       friend class PedalLine;
       };

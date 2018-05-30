@@ -17,18 +17,18 @@
 
 namespace Ms {
 
-enum class P_ID : int;
+enum class Pid : int;
 class XmlWriter;
 struct ChordDescription;
 class Element;
 
 //---------------------------------------------------------
-//   StyleIdx
+//   Sid
 //
 //    Keep in sync with styleTypes[] in style.cpp
 //---------------------------------------------------------
 
-enum class StyleIdx {
+enum class Sid {
       NOSTYLE = -1,
 
       pageWidth,
@@ -151,6 +151,12 @@ enum class StyleIdx {
       hairpinHeight,
       hairpinContHeight,
       hairpinLineWidth,
+      hairpinFontFace,
+      hairpinFontSize,
+      hairpinFontBold,
+      hairpinFontItalic,
+      hairpinFontUnderline,
+      hairpinTextAlign,
 
       pedalPlacement,
       pedalPosAbove,
@@ -159,10 +165,20 @@ enum class StyleIdx {
       pedalLineStyle,
       pedalBeginTextOffset,
       pedalHookHeight,
+      pedalFontFace,
+      pedalFontSize,
+      pedalFontBold,
+      pedalFontItalic,
+      pedalFontUnderline,
+      pedalTextAlign,
 
       trillPlacement,
       trillPosAbove,
       trillPosBelow,
+
+      vibratoPlacement,
+      vibratoPosAbove,
+      vibratoPosBelow,
 
       harmonyY,
       harmonyFretDist,
@@ -172,6 +188,7 @@ enum class StyleIdx {
       fretNumMag,
       fretNumPos,
       fretY,
+      fretMinDistance,
 
       showPageNumber,
       showPageNumberOne,
@@ -222,6 +239,7 @@ enum class StyleIdx {
       ArpeggioNoteDistance,
       ArpeggioLineWidth,
       ArpeggioHookLen,
+      ArpeggioHiddenInStdIfTab,
 
       SlurEndWidth,
       SlurMidWidth,
@@ -257,6 +275,13 @@ enum class StyleIdx {
       voltaHook,
       voltaLineWidth,
       voltaLineStyle,
+      voltaFontFace,
+      voltaFontSize,
+      voltaFontBold,
+      voltaFontItalic,
+      voltaFontUnderline,
+      voltaAlign,
+      voltaOffset,
 
       ottavaPlacement,
       ottavaPosAbove,
@@ -265,6 +290,12 @@ enum class StyleIdx {
       ottavaLineWidth,
       ottavaLineStyle,
       ottavaNumbersOnly,
+      ottavaFontFace,
+      ottavaFontSize,
+      ottavaFontBold,
+      ottavaFontItalic,
+      ottavaFontUnderline,
+      ottavaTextAlign,
 
       tabClef,
 
@@ -291,6 +322,12 @@ enum class StyleIdx {
       tupletDirection,
       tupletNumberType,
       tupletBracketType,
+      tupletFontFace,
+      tupletFontSize,
+      tupletFontBold,
+      tupletFontItalic,
+      tupletFontUnderline,
+      tupletAlign,
 
       barreLineWidth,
       fretMag,
@@ -336,6 +373,7 @@ enum class StyleIdx {
       defaultOffset,
       defaultOffsetType,
       defaultSystemFlag,
+      defaultText,
 
       titleFontFace,
       titleFontSize,
@@ -524,13 +562,6 @@ enum class StyleIdx {
       translatorFontItalic,
       translatorFontUnderline,
 
-      tupletFontFace,
-      tupletFontSize,
-      tupletFontBold,
-      tupletFontItalic,
-      tupletFontUnderline,
-      tupletAlign,
-
       systemFontFace,
       systemFontSize,
       systemFontBold,
@@ -538,28 +569,34 @@ enum class StyleIdx {
       systemFontUnderline,
       systemOffset,
       systemOffsetType,
-//      systemSystemFlag,
+      systemAlign,
 
-      staffFontFace,
-      staffFontSize,
-      staffFontBold,
-      staffFontItalic,
-      staffFontUnderline,
-      staffOffset,
-      staffOffsetType,
-//      staffSystemFlag,
+      staffTextFontFace,
+      staffTextFontSize,
+      staffTextFontBold,
+      staffTextFontItalic,
+      staffTextFontUnderline,
+      staffTextAlign,
+      staffTextOffset,
+      staffTextOffsetType,
+      staffTextPlacement,
+      staffTextPosAbove,
+      staffTextPosBelow,
+      staffTextMinDistance,
 
       chordSymbolFontFace,
       chordSymbolFontSize,
       chordSymbolFontBold,
       chordSymbolFontItalic,
       chordSymbolFontUnderline,
+      chordSymbolAlign,
 
       rehearsalMarkFontFace,
       rehearsalMarkFontSize,
       rehearsalMarkFontBold,
       rehearsalMarkFontItalic,
       rehearsalMarkFontUnderline,
+      rehearsalMarkAlign,
       rehearsalMarkFrame,
       rehearsalMarkFrameSquare,
       rehearsalMarkFrameCircle,
@@ -579,6 +616,7 @@ enum class StyleIdx {
       repeatLeftFontItalic,
       repeatLeftFontUnderline,
       repeatLeftAlign,
+      repeatLeftPlacement,
 
       repeatRightFontFace,
       repeatRightFontSize,
@@ -586,14 +624,7 @@ enum class StyleIdx {
       repeatRightFontItalic,
       repeatRightFontUnderline,
       repeatRightAlign,
-
-      voltaFontFace,
-      voltaFontSize,
-      voltaFontBold,
-      voltaFontItalic,
-      voltaFontUnderline,
-      voltaAlign,
-      voltaOffset,
+      repeatRightPlacement,
 
       frameFontFace,
       frameFontSize,
@@ -613,33 +644,16 @@ enum class StyleIdx {
       glissandoFontBold,
       glissandoFontItalic,
       glissandoFontUnderline,
-
-      ottavaFontFace,
-      ottavaFontSize,
-      ottavaFontBold,
-      ottavaFontItalic,
-      ottavaFontUnderline,
-      ottavaTextAlign,
-
-      pedalFontFace,
-      pedalFontSize,
-      pedalFontBold,
-      pedalFontItalic,
-      pedalFontUnderline,
-      pedalTextAlign,
-
-      hairpinFontFace,
-      hairpinFontSize,
-      hairpinFontBold,
-      hairpinFontItalic,
-      hairpinFontUnderline,
-      hairpinTextAlign,
+      glissandoLineWidth,
+      glissandoText,
 
       bendFontFace,
       bendFontSize,
       bendFontBold,
       bendFontItalic,
       bendFontUnderline,
+      bendLineWidth,
+      bendArrowWidth,
 
       headerFontFace,
       headerFontSize,
@@ -658,6 +672,7 @@ enum class StyleIdx {
       instrumentChangeFontBold,
       instrumentChangeFontItalic,
       instrumentChangeFontUnderline,
+      instrumentChangeAlign,
       instrumentChangeOffset,
 
       figuredBassFontFace,
@@ -678,6 +693,40 @@ enum class StyleIdx {
       user2FontItalic,
       user2FontUnderline,
 
+      letRingFontFace,
+      letRingFontSize,
+      letRingFontBold,
+      letRingFontItalic,
+      letRingFontUnderline,
+      letRingTextAlign,
+      letRingHookHeight,
+      letRingPlacement,
+      letRingPosAbove,
+      letRingPosBelow,
+      letRingLineWidth,
+      letRingLineStyle,
+      letRingBeginTextOffset,
+      letRingText,
+
+      palmMuteFontFace,
+      palmMuteFontSize,
+      palmMuteFontBold,
+      palmMuteFontItalic,
+      palmMuteFontUnderline,
+      palmMuteTextAlign,
+      palmMuteHookHeight,
+      palmMutePlacement,
+      palmMutePosAbove,
+      palmMutePosBelow,
+      palmMuteLineWidth,
+      palmMuteLineStyle,
+      palmMuteBeginTextOffset,
+      palmMuteText,
+
+      fermataPosAbove,
+      fermataPosBelow,
+      fermataMinDistance,
+
       STYLES
       };
 
@@ -686,27 +735,25 @@ enum class StyleIdx {
 //---------------------------------------------------------
 
 struct StyledProperty {
-      StyleIdx styleIdx;
-      P_ID propertyIdx;
+      Sid sid;
+      Pid pid;
       };
 
-extern const std::vector<StyledProperty> fingeringStyle;
-extern const std::vector<StyledProperty> titleStyle;
-
 //-------------------------------------------------------------------
-//   SubStyle
+//   SubStyleId
 //    Enumerate the list of built-in substyles
 //    must be in sync with namedStyles array
 //-------------------------------------------------------------------
 
-enum class SubStyle {
+enum class SubStyleId {
+      EMPTY,
       DEFAULT,
       TITLE,
       SUBTITLE,
       COMPOSER,
       POET,
-      LYRIC1,
-      LYRIC2,
+      LYRIC_ODD,
+      LYRIC_EVEN,
       FINGERING,
       LH_GUITAR_FINGERING,
       RH_GUITAR_FINGERING,
@@ -731,25 +778,35 @@ enum class SubStyle {
       TEXTLINE,
       GLISSANDO,
       OTTAVA,
+      VOLTA,
       PEDAL,
+      LET_RING,
+      PALM_MUTE,
       HAIRPIN,
       BEND,
       HEADER,
       FOOTER,
       INSTRUMENT_CHANGE,
       FIGURED_BASS,
+      BEAM,
+      BOX,
+      FRET,
+      TREMOLO_BAR,
+      TIMESIG,
+      STEM,
       USER1,
       USER2,
       SUBSTYLES
       };
+
 
 //---------------------------------------------------------
 //   MStyle
 //---------------------------------------------------------
 
 class MStyle {
-      std::array<QVariant, int(StyleIdx::STYLES)> _values;
-      std::array<qreal, int(StyleIdx::STYLES)> _precomputedValues;
+      std::array<QVariant, int(Sid::STYLES)> _values;
+      std::array<qreal, int(Sid::STYLES)> _precomputedValues;
 
       ChordList _chordList;
       bool _customChordList;        // if true, chordlist will be saved as part of score
@@ -758,11 +815,11 @@ class MStyle {
       MStyle();
 
       void precomputeValues();
-      QVariant value(StyleIdx idx) const;
-      qreal pvalue(StyleIdx idx) const    { return _precomputedValues[int(idx)]; }
-      void set(StyleIdx idx, const QVariant& v);
+      QVariant value(Sid idx) const;
+      qreal pvalue(Sid idx) const    { return _precomputedValues[int(idx)]; }
+      void set(Sid idx, const QVariant& v);
 
-      bool isDefault(StyleIdx idx) const;
+      bool isDefault(Sid idx) const;
 
       const ChordDescription* chordDescription(int id) const;
       ChordList* chordList()  { return &_chordList; }
@@ -774,16 +831,23 @@ class MStyle {
       void save(XmlWriter& xml, bool optimize);
       bool readProperties(XmlReader&);
 
-      static const char* valueType(const StyleIdx);
-      static const char* valueName(const StyleIdx);
-      static StyleIdx styleIdx(const QString& name);
+      static const char* valueType(const Sid);
+      static const char* valueName(const Sid);
+      static Sid styleIdx(const QString& name);
       };
 
-const std::vector<StyledProperty>& subStyle(const char*);
-const std::vector<StyledProperty>& subStyle(SubStyle);
-const char* subStyleName(SubStyle);
-QString subStyleUserName(SubStyle);
-SubStyle subStyleFromName(const QString&);
+typedef std::vector<StyledProperty> SubStyle;
+
+extern const SubStyle emptyStyle;
+extern const SubStyle defaultStyle;
+extern const SubStyle fingeringStyle;
+
+const SubStyle& subStyle(SubStyleId);
+const SubStyle& subStyle(const char*);
+
+const char* subStyleName(SubStyleId);
+QString subStyleUserName(SubStyleId);
+SubStyleId subStyleFromName(const QString&);
 
 #ifndef NDEBUG
 extern void checkStyles();

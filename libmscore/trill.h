@@ -24,9 +24,7 @@ class Accidental;
 //   @@ TrillSegment
 //---------------------------------------------------------
 
-class TrillSegment : public LineSegment {
-      Q_GADGET
-
+class TrillSegment final : public LineSegment {
       std::vector<SymId> _symbols;
 
       void symbolLine(SymId start, SymId fill);
@@ -42,9 +40,9 @@ class TrillSegment : public LineSegment {
       virtual bool acceptDrop(EditData&) const override;
       virtual Element* drop(EditData&) override;
       virtual void layout() override;
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
       virtual void add(Element*) override;
       virtual void remove(Element*) override;
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all) override;
@@ -59,13 +57,10 @@ class TrillSegment : public LineSegment {
 //   @P trillType  enum (Trill.DOWNPRALL_LINE, .PRALLPRALL_LINE, .PURE_LINE, .TRILL_LINE, .UPPRALL_LINE)
 //---------------------------------------------------------
 
-class Trill : public SLine {
-      Q_GADGET
-      Q_ENUMS(Type)
-
+class Trill final : public SLine {
    public:
       enum class Type : char {
-            TRILL_LINE, UPPRALL_LINE, DOWNPRALL_LINE, PRALLPRALL_LINE
+            TRILL_LINE, UPPRALL_LINE, DOWNPRALL_LINE, PRALLPRALL_LINE,
             };
 
    private:
@@ -104,9 +99,9 @@ class Trill : public SLine {
       Segment* segment() const          { return (Segment*)parent(); }
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
       virtual void setYoff(qreal) override;
 
       virtual QString accessibleInfo() const override;

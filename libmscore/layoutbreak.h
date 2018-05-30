@@ -26,9 +26,7 @@ namespace Ms {
 //   @P layoutBreakType  enum (LayoutBreak.PAGE, LayoutBreak.LINE, LayoutBreak.SECTION)
 //---------------------------------------------------------
 
-class LayoutBreak : public Element {
-      Q_GADGET
-
+class LayoutBreak final : public Element {
    public:
       enum Type {
             PAGE, LINE, SECTION, NOBREAK
@@ -54,7 +52,7 @@ class LayoutBreak : public Element {
       LayoutBreak(const LayoutBreak&);
       virtual LayoutBreak* clone() const override { return new LayoutBreak(*this); }
 
-      virtual ElementType type() const override { return ElementType::LAYOUT_BREAK; }
+      virtual ElementType type() const override   { return ElementType::LAYOUT_BREAK; }
       virtual bool systemFlag() const override    { return true;  }
 
       void setLayoutBreakType(Type);
@@ -79,9 +77,9 @@ class LayoutBreak : public Element {
       bool isSectionBreak() const { return _layoutBreakType == SECTION; }
       bool isNoBreak() const      { return _layoutBreakType == NOBREAK; }
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
       };
 
 

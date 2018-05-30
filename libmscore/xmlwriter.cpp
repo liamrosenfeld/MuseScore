@@ -157,7 +157,7 @@ void XmlWriter::netag(const char* s)
 //   tag
 //---------------------------------------------------------
 
-void XmlWriter::tag(P_ID id, QVariant data, QVariant defaultData)
+void XmlWriter::tag(Pid id, QVariant data, QVariant defaultData)
       {
       if (data == defaultData)
             return;
@@ -194,14 +194,14 @@ void XmlWriter::tag(P_ID id, QVariant data, QVariant defaultData)
                              }
                   break;
             case P_TYPE::GLISSANDO_STYLE:
-                  switch (MScore::GlissandoStyle(data.toInt())) {
-                        case MScore::GlissandoStyle::BLACK_KEYS:
+                  switch (GlissandoStyle(data.toInt())) {
+                        case GlissandoStyle::BLACK_KEYS:
                               tag(name, QVariant("blackkeys"));
                               break;
-                        case MScore::GlissandoStyle::WHITE_KEYS:
+                        case GlissandoStyle::WHITE_KEYS:
                               tag(name, QVariant("whitekeys"));
                               break;
-                        case MScore::GlissandoStyle::DIATONIC:
+                        case GlissandoStyle::DIATONIC:
                               tag(name, QVariant("diatonic"));
                               break;
                         default:
@@ -248,11 +248,11 @@ void XmlWriter::tag(P_ID id, QVariant data, QVariant defaultData)
                         }
                   break;
             case P_TYPE::PLACEMENT:
-                  switch (Element::Placement(data.toInt())) {
-                        case Element::Placement::ABOVE:
+                  switch (Placement(data.toInt())) {
+                        case Placement::ABOVE:
                               tag(name, QVariant("above"));
                               break;
-                        case Element::Placement::BELOW:
+                        case Placement::BELOW:
                               tag(name, QVariant("below"));
                               break;
                         }
@@ -270,10 +270,29 @@ void XmlWriter::tag(P_ID id, QVariant data, QVariant defaultData)
                   tag(name, NoteHead::type2name(NoteHead::Type(data.toInt())));
                   break;
             case P_TYPE::SUB_STYLE:
-                  tag(name, subStyleName(SubStyle(data.toInt())));
+                  tag(name, subStyleName(SubStyleId(data.toInt())));
                   break;
-            default:
-                  Q_ASSERT(false);
+            case P_TYPE::FRACTION:
+                  qFatal("unknown: FRACTION");
+            case P_TYPE::POINT_SP:
+                  qFatal("unknown: POINT_SP");
+            case P_TYPE::POINT_MM:
+                  qFatal("unknown: POINT_MM");
+            case P_TYPE::SIZE_MM:
+                  qFatal("unknown: SIZE_MM");
+            case P_TYPE::TDURATION:
+                  qFatal("unknown: TDURATION");
+            case P_TYPE::BEAM_MODE:
+                  qFatal("unknown: BEAM_MODE");
+            case P_TYPE::TEMPO:
+                  qFatal("unknown: TEMPO");
+            case P_TYPE::GROUPS:
+                  qFatal("unknown: GROUPS");
+            case P_TYPE::INT_LIST:
+                  qFatal("unknown: INT_LIST");
+
+//            default:
+//                  Q_ASSERT(false);
             }
       }
 

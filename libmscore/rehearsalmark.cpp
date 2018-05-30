@@ -22,8 +22,10 @@ namespace Ms {
 //---------------------------------------------------------
 
 RehearsalMark::RehearsalMark(Score* s)
-   : SystemText(SubStyle::REHEARSAL_MARK, s)
+   : TextBase(s)
       {
+      initSubStyle(SubStyleId::REHEARSAL_MARK);
+      setSystemFlag(true);
       }
 
 //---------------------------------------------------------
@@ -32,18 +34,9 @@ RehearsalMark::RehearsalMark(Score* s)
 
 void RehearsalMark::layout()
       {
-      if (autoplace())
-            setUserOff(QPointF());
-      qreal y;
-      if (placeAbove())
-            y = score()->styleP(StyleIdx::rehearsalMarkPosAbove);
-      else {
-            qreal sh = staff() ? staff()->height() : 0;
-            y = score()->styleP(StyleIdx::rehearsalMarkPosBelow) + sh + lineSpacing();
-            }
+      qreal y = placeAbove() ? styleP(Sid::rehearsalMarkPosAbove) : styleP(Sid::rehearsalMarkPosBelow) + staff()->height();
       setPos(QPointF(0.0, y));
-      Text::layout1();
-
+      TextBase::layout1();
       Segment* s = segment();
       if (s) {
             if (!s->rtick()) {
@@ -60,22 +53,7 @@ void RehearsalMark::layout()
                         rxpos() += qMin(leftX, barlineX) + width();
                         }
                   }
-            if (autoplace()) {
-                  int firstStaffIdx = s->measure()->system()->firstVisibleStaff();
-                  qreal minDistance = score()->styleP(StyleIdx::rehearsalMarkMinDistance);
-                  Shape s1 = s->measure()->staffShape(firstStaffIdx);
-                  Shape s2 = shape().translated(s->pos() + pos());
-                  if (placeAbove()) {
-                        qreal d = s2.minVerticalDistance(s1);
-                        if (d > -minDistance)
-                              rUserYoffset() = -d - minDistance;
-                        }
-                  else {
-                        qreal d = s1.minVerticalDistance(s2);
-                        if (d > -minDistance)
-                              rUserYoffset() = d + minDistance;
-                        }
-                  }
+            autoplaceSegmentElement(styleP(Sid::rehearsalMarkMinDistance));
             }
       }
 
@@ -83,15 +61,15 @@ void RehearsalMark::layout()
 //   propertyDefault
 //---------------------------------------------------------
 
-QVariant RehearsalMark::propertyDefault(P_ID id) const
+QVariant RehearsalMark::propertyDefault(Pid id) const
       {
       switch (id) {
-            case P_ID::SUB_STYLE:
-                  return int(SubStyle::REHEARSAL_MARK);
-            case P_ID::PLACEMENT:
-                  return score()->styleV(StyleIdx::rehearsalMarkPlacement);
+            case Pid::SUB_STYLE:
+                  return int(SubStyleId::REHEARSAL_MARK);
+            case Pid::PLACEMENT:
+                  return score()->styleV(Sid::rehearsalMarkPlacement);
             default:
-                  return Text::propertyDefault(id);
+                  return TextBase::propertyDefault(id);
             }
       }
 

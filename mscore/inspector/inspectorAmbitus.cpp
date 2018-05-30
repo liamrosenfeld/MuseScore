@@ -66,13 +66,13 @@ InspectorAmbitus::InspectorAmbitus(QWidget* parent)
       //
       // fix order of noteheads and tpc's
       //
-      for (int i = 0; i < int(NoteHead::Group::HEAD_GROUPS); ++i)
+      for (int i = 0; i < int(sizeof(heads)/sizeof(*heads)); ++i)
             r.noteHeadGroup->setItemData(i, int(heads[i]));
       // noteHeadType starts at -1
       for (int i = 0; i < 5; ++i)
             r.noteHeadType->setItemData(i, i-1);
       // set proper itemdata for TPC combos
-      for (int i = 0; i < Tpc::TPC_MAX-Tpc::TPC_MIN+2; ++i) {
+      for (int i = 0; i < int(sizeof(tpcs)/sizeof(*tpcs)); ++i) {
             r.topTpc->   setItemData(i, tpcs[i]);
             r.bottomTpc->setItemData(i, tpcs[i]);
             }
@@ -85,17 +85,17 @@ InspectorAmbitus::InspectorAmbitus(QWidget* parent)
       item->setFlags(item->flags() & ~(Qt::ItemIsSelectable|Qt::ItemIsEnabled));
 
       const std::vector<InspectorItem> iiList = {
-            { P_ID::HEAD_GROUP,     0, r.noteHeadGroup, r.resetNoteHeadGroup },
-            { P_ID::HEAD_TYPE,      0, r.noteHeadType,  r.resetNoteHeadType  },
-            { P_ID::MIRROR_HEAD,    0, r.direction,     r.resetDirection     },
-            { P_ID::GHOST,          0, r.hasLine,       r.resetHasLine       },      // recycled property
-            { P_ID::LINE_WIDTH,     0, r.lineWidth,     r.resetLineWidth     },
-            { P_ID::TPC1,           0, r.topTpc,        nullptr              },
-            { P_ID::FBPARENTHESIS1, 0, r.bottomTpc,     nullptr              },      // recycled property
-            { P_ID::FBPARENTHESIS3, 0, r.topOctave,     nullptr              },      // recycled property
-            { P_ID::FBPARENTHESIS4, 0, r.bottomOctave,  nullptr              },      // recycled property
+            { Pid::HEAD_GROUP,     0, r.noteHeadGroup, r.resetNoteHeadGroup },
+            { Pid::HEAD_TYPE,      0, r.noteHeadType,  r.resetNoteHeadType  },
+            { Pid::MIRROR_HEAD,    0, r.direction,     r.resetDirection     },
+            { Pid::GHOST,          0, r.hasLine,       r.resetHasLine       },      // recycled property
+            { Pid::LINE_WIDTH,     0, r.lineWidth,     r.resetLineWidth     },
+            { Pid::TPC1,           0, r.topTpc,        nullptr              },
+            { Pid::FBPARENTHESIS1, 0, r.bottomTpc,     nullptr              },      // recycled property
+            { Pid::FBPARENTHESIS3, 0, r.topOctave,     nullptr              },      // recycled property
+            { Pid::FBPARENTHESIS4, 0, r.bottomOctave,  nullptr              },      // recycled property
 
-            { P_ID::LEADING_SPACE,  1, s.leadingSpace,  s.resetLeadingSpace  },
+            { Pid::LEADING_SPACE,  1, s.leadingSpace,  s.resetLeadingSpace  },
             };
 
       const std::vector<InspectorPanel> ppList = { { r.title, r.panel }, { s.title, s.panel } };

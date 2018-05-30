@@ -34,16 +34,14 @@ struct BreathType {
 //!    breathType() is index in symList
 //---------------------------------------------------------
 
-class Breath : public Element {
-      Q_GADGET
-
+class Breath final : public Element {
       qreal _pause;
       SymId _symId;
 
    public:
       Breath(Score* s);
       virtual ElementType type() const override { return ElementType::BREATH; }
-      virtual Breath* clone() const override      { return new Breath(*this); }
+      virtual Breath* clone() const override    { return new Breath(*this); }
 
       void setSymId(SymId id)          { _symId = id; }
       SymId symId() const              { return _symId; }
@@ -58,9 +56,9 @@ class Breath : public Element {
       virtual void read(XmlReader&) override;
       virtual QPointF pagePos() const override;      ///< position in page coordinates
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       virtual Element* nextSegmentElement() override;
       virtual Element* prevSegmentElement() override;

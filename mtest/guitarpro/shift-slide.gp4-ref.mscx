@@ -5,6 +5,7 @@
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
+      <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -91,7 +92,7 @@
             <fret>7</fret>
             <string>3</string>
             <Glissando id="2">
-              <subtype>0</subtype>
+              <text>gliss.</text>
               <lid>12</lid>
               <diagonal>1</diagonal>
               <anchor>3</anchor>
@@ -126,7 +127,7 @@
       <currentLayer>0</currentLayer>
       <Division>480</Division>
       <Style>
-        <createMultiMeasureRests>1</createMultiMeasureRests>
+        <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
@@ -232,7 +233,7 @@
               <fret>7</fret>
               <string>3</string>
               <Glissando id="3">
-                <subtype>0</subtype>
+                <text>gliss.</text>
                 <lid>12</lid>
                 <diagonal>1</diagonal>
                 <anchor>3</anchor>
@@ -282,7 +283,7 @@
               <fret>7</fret>
               <string>3</string>
               <Glissando id="4">
-                <subtype>0</subtype>
+                <text>gliss.</text>
                 <lid>12</lid>
                 <diagonal>1</diagonal>
                 <anchor>3</anchor>

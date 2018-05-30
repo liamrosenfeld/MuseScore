@@ -750,7 +750,7 @@ void StaffType::drawInputStringMarks(QPainter *p, int string, int voice, QRectF 
       qreal       lineDist    = _lineDistance.val() * spatium;
       bool        hasFret;
       QString     text        = tabBassStringPrefix(string, &hasFret);
-//    qreal       lw          = point(score()->styleS(StyleIdx::ledgerLineWidth));  // no access to score form here
+//    qreal       lw          = point(score()->styleS(Sid::ledgerLineWidth));  // no access to score form here
       qreal       lw          = LEDGER_LINE_THICKNESS * spatium;                    // use a fixed width
       QPen        pen(MScore::selectColor[voice].lighter(SHADOW_NOTE_LIGHT), lw);
       p->setPen(pen);
@@ -768,7 +768,9 @@ void StaffType::drawInputStringMarks(QPainter *p, int string, int voice, QRectF 
             }
       // draw the text, if any
       if (!text.isEmpty()) {
-            p->setFont(fretFont());
+            QFont f = fretFont();
+            f.setPointSizeF(f.pointSizeF() * MScore::pixelRatio);
+            p->setFont(f);
             p->drawText(QPointF(rect.left(), rect.top() + lineDist), text);
             }
       }
@@ -842,7 +844,7 @@ qreal StaffType::physStringToYOffset(int strg) const
       if (yOffset >= _lines) {                  // if physical string 'below' tab lines,
             yOffset = _lines;                   // reduce to first string 'below' tab body
             if (!_useNumbers)                   // with letters, add some space for the slashes ascender
-                  yOffset = _lines + STAFFTYPE_TAB_BASSSLASH_YOFFSET;
+                  yOffset = _onLines ? _lines : _lines + STAFFTYPE_TAB_BASSSLASH_YOFFSET;
             }
       // if TAB upside down, flip around top line
       yOffset = _upsideDown ? (qreal)(_lines - 1) - yOffset : yOffset;
@@ -896,7 +898,7 @@ void TabDurationSymbol::layout()
       qreal xpos, ypos;             // position coords
 
       _beamGrid = TabBeamGrid::NONE;
-      Chord* chord = static_cast<Chord*>(parent());
+      Chord* chord = toChord(parent());
       // if no chord (shouldn't happens...) or not a special beam mode, layout regular symbol
       if (!chord || !chord->isChord() ||
             (chord->beamMode() != Beam::Mode::BEGIN && chord->beamMode() != Beam::Mode::MID &&
@@ -957,7 +959,7 @@ void TabDurationSymbol::layout2()
             return;
 
       // get 'grid' beam length from page positions of this' chord and previous chord
-      Chord*      chord       = static_cast<Chord*>(parent());
+      Chord*      chord       = toChord(parent());
       ChordRest*  prevChord   = prevChordRest(chord, true);
       if (chord == nullptr || prevChord == nullptr)
             return;
@@ -1008,7 +1010,7 @@ void TabDurationSymbol::draw(QPainter* painter) const
             if (_beamGrid == TabBeamGrid::MEDIALFINAL) {
                   pen.setWidthF(font.gridBeamWidth * _spatium);
                   painter->setPen(pen);
-                  // lower heigth available to beams by half a beam width,
+                  // lower height available to beams by half a beam width,
                   // so that top beam upper border aligns with stem top
                   h += (font.gridBeamWidth * _spatium) * 0.5;
                   // draw beams equally spaced within the stem height (this is
@@ -1171,7 +1173,7 @@ bool TablatureDurationFont::read(XmlReader& e)
 //   Read Configuration File
 //
 //    reads a configuration and appends read data to g_TABFonts
-//    resets everythings and reads the built-in config file if fileName is null or empty
+//    resets everything and reads the built-in config file if fileName is null or empty
 //---------------------------------------------------------
 
 bool StaffType::readConfigFile(const QString& fileName)
@@ -1203,7 +1205,7 @@ bool StaffType::readConfigFile(const QString& fileName)
             return false;
             }
 
-      XmlReader e(0, &f);
+      XmlReader e(&f);
       while (e.readNextStartElement()) {
             if (e.name() == "museScore") {
                   while (e.readNextStartElement()) {
@@ -1417,7 +1419,7 @@ void StaffType::initStaffTypes()
 
 qreal StaffType::spatium(Score* score) const
       {
-      return score->spatium() * (small() ? score->styleD(StyleIdx::smallStaffMag) : 1.0) * userMag();
+      return score->spatium() * (small() ? score->styleD(Sid::smallStaffMag) : 1.0) * userMag();
       }
 
 } // namespace Ms

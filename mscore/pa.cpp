@@ -96,7 +96,7 @@ bool Portaudio::init(bool)
       if (MScore::debugMode)
             qDebug("using PortAudio Version: %s", Pa_GetVersionText());
 
-      PaDeviceIndex idx = preferences.portaudioDevice;
+      PaDeviceIndex idx = preferences.getInt(PREF_IO_PORTAUDIO_DEVICE);
       if (idx < 0) {
             idx = Pa_GetDefaultOutputDevice();
             qDebug("No device selected.  PortAudio detected %d devices.  Will use the default device (index %d).", Pa_GetDeviceCount(), idx);
@@ -104,7 +104,8 @@ bool Portaudio::init(bool)
 
       const PaDeviceInfo* di = Pa_GetDeviceInfo(idx);
 
-      if (di == nullptr)
+      //select default output device if no device or device without output channels have been selected
+      if (di == nullptr || di->maxOutputChannels < 1)
             di = Pa_GetDeviceInfo(Pa_GetDefaultOutputDevice());
 
       if (!di)
@@ -118,11 +119,7 @@ bool Portaudio::init(bool)
       out.device           = idx;
       out.channelCount     = 2;
       out.sampleFormat     = paFloat32;
-#ifdef Q_OS_MAC
-      out.suggestedLatency = 0.020;
-#else // on windows, this small latency causes some problem
-      out.suggestedLatency = 0.100;
-#endif
+      out.suggestedLatency = di->defaultLowOutputLatency;
       out.hostApiSpecificStreamInfo = 0;
 
       err = Pa_OpenStream(&stream, 0, &out, double(_sampleRate), 0, 0, paCallback, (void*)this);
@@ -280,6 +277,8 @@ void Portaudio::midiRead()
 //   putEvent
 //---------------------------------------------------------
 
+#ifdef USE_PORTMIDI
+
 // Prevent killing sequencer with wrong data
 #define less128(__less) ((__less >=0 && __less <= 127) ? __less : 0)
 
@@ -352,6 +351,7 @@ void Portaudio::putEvent(const NPlayEvent& e, unsigned framePos)
                   break;
             }
       }
+#endif
 
 //---------------------------------------------------------
 //   currentApi
@@ -359,7 +359,7 @@ void Portaudio::putEvent(const NPlayEvent& e, unsigned framePos)
 
 int Portaudio::currentApi() const
       {
-      PaDeviceIndex idx = preferences.portaudioDevice;
+      PaDeviceIndex idx = preferences.getInt(PREF_IO_PORTAUDIO_DEVICE);
       if (idx < 0)
             idx = Pa_GetDefaultOutputDevice();
 
@@ -383,7 +383,7 @@ int Portaudio::currentApi() const
 
 int Portaudio::currentDevice() const
       {
-      PaDeviceIndex idx = preferences.portaudioDevice;
+      PaDeviceIndex idx = preferences.getInt(PREF_IO_PORTAUDIO_DEVICE);
       if (idx < 0)
             idx = Pa_GetDefaultOutputDevice();
 

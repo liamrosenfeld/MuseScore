@@ -29,9 +29,6 @@ enum class SymId;
 //---------------------------------------------------------
 
 class Symbol : public BSymbol {
-      Q_GADGET
-      Q_PROPERTY(QString symbol        READ symName)
-
    protected:
       SymId _sym;
       const ScoreFont* _scoreFont = nullptr;
@@ -43,7 +40,7 @@ class Symbol : public BSymbol {
       Symbol &operator=(const Symbol&) = delete;
 
       virtual Symbol* clone() const      { return new Symbol(*this); }
-      virtual ElementType type() const { return ElementType::SYMBOL; }
+      virtual ElementType type() const   { return ElementType::SYMBOL; }
 
       void setSym(SymId s, const ScoreFont* sf = nullptr) { _sym  = s; _scoreFont = sf;    }
       SymId sym() const                  { return _sym;  }
@@ -64,9 +61,7 @@ class Symbol : public BSymbol {
 ///    Symbol constructed from a font glyph.
 //---------------------------------------------------------
 
-class FSymbol : public BSymbol {
-      Q_GADGET
-
+class FSymbol final : public BSymbol {
       QFont _font;
       int _code;
 

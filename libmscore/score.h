@@ -88,7 +88,7 @@ struct Interval;
 struct TEvent;
 struct LayoutContext;
 
-enum class SubStyle;
+enum class SubStyleId;
 enum class ClefType : signed char;
 enum class BeatType : char;
 enum class SymId;
@@ -379,7 +379,7 @@ class Score : public QObject, ScoreElement {
 
    private:
       int _linkId { 0 };
-      MasterScore* _masterScore;
+      MasterScore* _masterScore { 0 };
       QList<MuseScoreView*> viewer;
       Excerpt* _excerpt  { 0 };
 
@@ -509,6 +509,7 @@ class Score : public QObject, ScoreElement {
       void cmdAddPitch(const EditData&, int note, bool addFlag, bool insert);
       void cmdAddFret(int fret);
       void cmdToggleVisible();
+      void layoutLyrics(System*);
 
    protected:
       int _fileDivision; ///< division of current loading *.msc file
@@ -618,21 +619,19 @@ class Score : public QObject, ScoreElement {
       void undoChangeUserMirror(Note*, MScore::DirectionH);
       void undoChangeKeySig(Staff* ostaff, int tick, KeySigEvent);
       void undoChangeClef(Staff* ostaff, Segment*, ClefType st);
-      void undoChangeProperty(ScoreElement*, P_ID, const QVariant&, PropertyFlags ps = PropertyFlags::NOSTYLE);
-      void undoPropertyChanged(Element*, P_ID, const QVariant& v);
-      void undoPropertyChanged(ScoreElement*, P_ID, const QVariant& v);
+      bool undoPropertyChanged(Element*, Pid, const QVariant& v);
+      void undoPropertyChanged(ScoreElement*, Pid, const QVariant& v);
       inline virtual UndoStack* undoStack() const;
       void undo(UndoCommand*, EditData* = 0) const;
       void undoRemoveMeasures(Measure*, Measure*);
       void undoAddBracket(Staff* staff, int level, BracketType type, int span);
       void undoRemoveBracket(Bracket*);
       void undoInsertTime(int tick, int len);
-      void undoChangeBarLine(Measure*, BarLineType, SegmentType type);
-      void undoChangeStyleVal(StyleIdx idx, const QVariant& v);
+      void undoChangeStyleVal(Sid idx, const QVariant& v);
 
-      void setGraceNote(Chord*,  int pitch, NoteType type, int len);
+      Note* setGraceNote(Chord*,  int pitch, NoteType type, int len);
 
-      Segment* setNoteRest(Segment*, int track, NoteVal nval, Fraction, Direction stemDirection = Direction::AUTO);
+      Segment* setNoteRest(Segment*, int track, NoteVal nval, Fraction, Direction stemDirection = Direction::AUTO, bool rhythmic = false);
       void changeCRlen(ChordRest* cr, const TDuration&);
       void changeCRlen(ChordRest* cr, const Fraction&, bool fillWithRest=true);
       void createCRSequence(Fraction f, ChordRest* cr, int tick);
@@ -812,19 +811,19 @@ class Score : public QObject, ScoreElement {
       bool loadStyle(const QString&);
       bool saveStyle(const QString&);
 
-      QVariant styleV(StyleIdx idx) const  { return style().value(idx);   }
-      Spatium  styleS(StyleIdx idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"Ms::Spatium")); return style().value(idx).value<Spatium>();  }
-      qreal    styleP(StyleIdx idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"Ms::Spatium")); return style().pvalue(idx); }
-      QString  styleSt(StyleIdx idx) const { Q_ASSERT(!strcmp(MStyle::valueType(idx),"QString"));     return style().value(idx).toString(); }
-      bool     styleB(StyleIdx idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"bool"));        return style().value(idx).toBool();  }
-      qreal    styleD(StyleIdx idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"double"));      return style().value(idx).toDouble();  }
-      int      styleI(StyleIdx idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"int"));         return style().value(idx).toInt();  }
+      QVariant styleV(Sid idx) const  { return style().value(idx);   }
+      Spatium  styleS(Sid idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"Ms::Spatium")); return style().value(idx).value<Spatium>();  }
+      qreal    styleP(Sid idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"Ms::Spatium")); return style().pvalue(idx); }
+      QString  styleSt(Sid idx) const { Q_ASSERT(!strcmp(MStyle::valueType(idx),"QString"));     return style().value(idx).toString(); }
+      bool     styleB(Sid idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"bool"));        return style().value(idx).toBool();  }
+      qreal    styleD(Sid idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"double"));      return style().value(idx).toDouble();  }
+      int      styleI(Sid idx) const  { Q_ASSERT(!strcmp(MStyle::valueType(idx),"int"));         return style().value(idx).toInt();  }
 
-      qreal spatium() const                    { return styleD(StyleIdx::spatium);    }
-      void setSpatium(qreal v)                 { style().set(StyleIdx::spatium, v);  }
+      qreal spatium() const                    { return styleD(Sid::spatium);    }
+      void setSpatium(qreal v)                 { style().set(Sid::spatium, v);  }
 
-      bool genCourtesyTimesig() const          { return styleB(StyleIdx::genCourtesyTimesig); }
-      bool genCourtesyClef() const             { return styleB(StyleIdx::genCourtesyClef); }
+      bool genCourtesyTimesig() const          { return styleB(Sid::genCourtesyTimesig); }
+      bool genCourtesyClef() const             { return styleB(Sid::genCourtesyClef); }
 
       // These position are in ticks and not uticks
       int playPos() const                      { return pos(POS::CURRENT);   }
@@ -883,7 +882,7 @@ class Score : public QObject, ScoreElement {
 
       bool defaultsRead() const                      { return _defaultsRead;    }
       void setDefaultsRead(bool b)                   { _defaultsRead = b;       }
-      Text* getText(SubStyle subtype);
+      Text* getText(SubStyleId subtype);
 
       void lassoSelect(const QRectF&);
       void lassoSelectEnd();
@@ -903,7 +902,7 @@ class Score : public QObject, ScoreElement {
       void adjustBracketsIns(int sidx, int eidx);
       void adjustKeySigs(int sidx, int eidx, KeyList km);
 
-      Measure* searchLabel(const QString& s);
+      Measure* searchLabel(const QString& s, Measure* startMeasure = nullptr, Measure* endMeasure = nullptr);
       Measure* searchLabelWithinSectionFirst(const QString& s, Measure* sectionStartMeasure, Measure* sectionEndMeasure);
       virtual inline RepeatList* repeatList() const;
       qreal utick2utime(int tick) const;
@@ -982,7 +981,7 @@ class Score : public QObject, ScoreElement {
 
       void updateHairpin(Hairpin*);       // add/modify hairpin to pitchOffset list
       void removeHairpin(Hairpin*);       // remove hairpin from pitchOffset list
-      Volta* searchVolta(int tick) const;
+
       MasterScore* masterScore() const    { return _masterScore; }
       void setMasterScore(MasterScore* s) { _masterScore = s;    }
       void createRevision();
@@ -1126,9 +1125,9 @@ class Score : public QObject, ScoreElement {
       bool checkKeys();
       bool checkClefs();
 
-      virtual QVariant getProperty(P_ID) const override;
-      virtual bool setProperty(P_ID, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid) const override;
+      virtual bool setProperty(Pid, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       virtual inline QQueue<MidiInputEvent>* midiInputQueue();
       virtual inline std::list<MidiInputEvent>* activeMidiPitches();

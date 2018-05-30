@@ -33,11 +33,10 @@ enum class ElementType {
       INSTRUMENT_NAME,
       SLUR_SEGMENT,
       TIE_SEGMENT,
-      STAFF_LINES,
       BAR_LINE,
+      STAFF_LINES,
       SYSTEM_DIVIDER,
       STEM_SLASH,
-      LINE,
       ARPEGGIO,
       ACCIDENTAL,
       LEDGER_LINE,
@@ -52,6 +51,7 @@ enum class ElementType {
       REPEAT_MEASURE,
       TIE,
       ARTICULATION,
+      FERMATA,
       CHORDLINE,
       DYNAMIC,
       BEAM,
@@ -76,6 +76,9 @@ enum class ElementType {
       HAIRPIN_SEGMENT,
       OTTAVA_SEGMENT,
       TRILL_SEGMENT,
+      LET_RING_SEGMENT,
+      VIBRATO_SEGMENT,
+      PALM_MUTE_SEGMENT,
       TEXTLINE_SEGMENT,
       VOLTA_SEGMENT,
       PEDAL_SEGMENT,
@@ -99,6 +102,9 @@ enum class ElementType {
       OTTAVA,
       PEDAL,
       TRILL,
+      LET_RING,
+      VIBRATO,
+      PALM_MUTE,
       TEXTLINE,
       TEXTLINE_BASE,
       NOTELINE,
@@ -125,7 +131,6 @@ enum class ElementType {
       MAXTYPE
       };
 
-Q_ENUM_NS(ElementType)
 
 //---------------------------------------------------------
 //   Direction
@@ -135,6 +140,39 @@ enum class Direction {
       AUTO, UP, DOWN
       };
 
+//---------------------------------------------------------
+//   GlissandoType
+//---------------------------------------------------------
+
+enum class GlissandoType {
+      STRAIGHT, WAVY
+      };
+
+//---------------------------------------------------------
+//   GlissandoStyle
+//---------------------------------------------------------
+
+enum class GlissandoStyle {
+      CHROMATIC, WHITE_KEYS, BLACK_KEYS, DIATONIC
+      };
+
+//---------------------------------------------------------
+//   Placement
+//---------------------------------------------------------
+
+enum class Placement {
+      ABOVE, BELOW
+      };
+
+//---------------------------------------------------------
+//   Tuplets
+//---------------------------------------------------------
+
+enum class TupletNumberType  : char { SHOW_NUMBER, SHOW_RELATION, NO_TEXT         };
+enum class TupletBracketType : char { AUTO_BRACKET, SHOW_BRACKET, SHOW_NO_BRACKET };
+
+
+Q_ENUM_NS(ElementType)
 Q_ENUM_NS(Direction)
 
 //hack: to force the build system to run moc on this file
@@ -149,8 +187,6 @@ extern void fillComboBoxDirection(QComboBox*);
 
 
 } // namespace Ms
-
-// Q_DECLARE_METATYPE(Ms::Direction);
 
 #endif
 

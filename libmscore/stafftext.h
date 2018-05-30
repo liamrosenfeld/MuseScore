@@ -29,12 +29,10 @@ struct ChannelActions {
       };
 
 //---------------------------------------------------------
-//   @@ StaffText
+//   StaffTextBase
 //---------------------------------------------------------
 
-class StaffText : public Text  {
-      Q_GADGET
-
+class StaffTextBase : public TextBase  {
       QString _channelNames[4];
       QList<ChannelActions> _channelActions;
       SwingParameters _swingParameters;
@@ -42,21 +40,16 @@ class StaffText : public Text  {
       int aeolusStops[4]   { 0, 0, 0, 0 };
       bool _swing          { false };
 
-   protected:
-      virtual void writeProperties(XmlWriter& xml) const;
-
    public:
-      StaffText(Score* = 0);
-      StaffText(SubStyle, Score* = 0);
-      virtual StaffText* clone() const                    { return new StaffText(*this);    }
-      virtual ElementType type() const                    { return ElementType::STAFF_TEXT; }
+      StaffTextBase(Score* = 0, ElementFlags = ElementFlag::NOTHING);
+
       virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
       virtual bool readProperties(XmlReader&) override;
-      virtual int subtype() const                         { return (int) subStyle(); }
+      virtual int subtype() const                         { return (int) subStyleId(); }
       virtual void layout() override;
       virtual QString subtypeName() const                 { return "??"; }
-      virtual QVariant propertyDefault(P_ID id) const override;
+      virtual QVariant propertyDefault(Pid id) const override;
 
       Segment* segment() const;
       QString channelName(int voice) const                { return _channelNames[voice]; }
@@ -73,6 +66,19 @@ class StaffText : public Text  {
       bool setAeolusStops() const                         { return _setAeolusStops; }
       bool swing() const                                  { return _swing; }
       };
+
+//---------------------------------------------------------
+//   SystemText
+//---------------------------------------------------------
+
+class StaffText final : public StaffTextBase  {
+   public:
+      StaffText(Score* score);
+      StaffText(SubStyleId, Score* = 0);
+      virtual StaffText* clone() const override       { return new StaffText(*this); }
+      virtual ElementType type() const override       { return ElementType::STAFF_TEXT; }
+      };
+
 
 }     // namespace Ms
 #endif

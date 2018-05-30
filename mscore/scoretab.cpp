@@ -23,7 +23,6 @@
 #include "config.h"
 #include "scoretab.h"
 #include "scoreview.h"
-#include "scoreview.h"
 #include "libmscore/score.h"
 #include "magbox.h"
 #ifdef OMR
@@ -294,6 +293,8 @@ void ScoreTab::updateExcerpts()
       blockSignals(true);
       setExcerpt(0);
       blockSignals(false);
+
+      getAction("file-part-export")->setEnabled(excerpts.size() > 0);
       }
 
 //---------------------------------------------------------

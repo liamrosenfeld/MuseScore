@@ -81,12 +81,10 @@ constexpr bool operator& (const SegmentType t1, const SegmentType t2) {
 //   @P tick            int               midi tick position (read only)
 //------------------------------------------------------------------------
 
-class Segment : public Element {
-      Q_GADGET
-
+class Segment final : public Element {
       SegmentType _segmentType { SegmentType::Invalid };
-      int _tick;                          // tick offset to measure
-      int _ticks;
+      int _tick = 0;                          // tick offset to measure
+      int _ticks = 0;
       Spatium _extraLeadingSpace;
       qreal _stretch;
 
@@ -157,8 +155,8 @@ class Segment : public Element {
       void setElement(int track, Element* el);
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true);
 
-      Measure* measure() const                   { return (Measure*)parent(); }
-      System* system() const                     { return (System*)parent()->parent(); }
+      Measure* measure() const                   { return toMeasure(parent()); }
+      System* system() const                     { return toSystem(parent()->parent()); }
       qreal x() const                            { return ipos().x();         }
       void setX(qreal v)                         { rxpos() = v;               }
 
@@ -200,6 +198,8 @@ class Segment : public Element {
       void clearAnnotations();
       void removeAnnotation(Element* e);
       bool findAnnotationOrElement(ElementType type, int minTrack, int maxTrack);
+      bool findAnnotation(ElementType type, int minTrack, int maxTrack);
+
 
       qreal dotPosX(int staffIdx) const          { return _dotPosX[staffIdx];  }
       void setDotPosX(int staffIdx, qreal val)   { _dotPosX[staffIdx] = val;   }
@@ -210,9 +210,9 @@ class Segment : public Element {
       virtual void write(XmlWriter&) const;
       virtual void read(XmlReader&);
 
-      virtual QVariant getProperty(P_ID propertyId) const;
-      virtual bool setProperty(P_ID propertyId, const QVariant&);
-      virtual QVariant propertyDefault(P_ID) const;
+      virtual QVariant getProperty(Pid propertyId) const;
+      virtual bool setProperty(Pid propertyId, const QVariant&);
+      virtual QVariant propertyDefault(Pid) const;
 
       bool operator<(const Segment&) const;
       bool operator>(const Segment&) const;
@@ -250,6 +250,7 @@ class Segment : public Element {
       qreal minLeft(const Shape&) const;
       qreal minLeft() const;
       qreal minHorizontalDistance(Segment*, bool isSystemGap) const;
+      qreal minHorizontalCollidingDistance(Segment* ns) const;
 
       // some helper function
       ChordRest* cr(int track) const        { return toChordRest(_elist[track]); }

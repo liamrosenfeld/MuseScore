@@ -85,7 +85,7 @@ void ExportMidi::writeHeader()
       TimeSigMap* sigmap = cs->sigmap();
       foreach(const RepeatSegment* rs, *cs->repeatList()) {
             int startTick  = rs->tick;
-            int endTick    = startTick + rs->len;
+            int endTick    = startTick + rs->len();
             int tickOffset = rs->utick - rs->tick;
 
             auto bs = sigmap->lower_bound(startTick);
@@ -136,7 +136,7 @@ void ExportMidi::writeHeader()
             bool initialKeySigFound = false;
             for (const RepeatSegment* rs : *cs->repeatList()) {
                   int startTick  = rs->tick;
-                  int endTick    = startTick + rs->len;
+                  int endTick    = startTick + rs->len();
                   int tickOffset = rs->utick - rs->tick;
 
                   auto sk = keys->lower_bound(startTick);
@@ -208,7 +208,7 @@ void ExportMidi::writeHeader()
 //    return false on error
 //---------------------------------------------------------
 
-bool ExportMidi::write(const QString& name, bool midiExpandRepeats)
+bool ExportMidi::write(const QString& name, bool midiExpandRepeats, bool exportRPNs)
       {
       f.setFileName(name);
       if (!f.open(QIODevice::WriteOnly))
@@ -240,10 +240,10 @@ bool ExportMidi::write(const QString& name, bool midiExpandRepeats)
             cs->renderStaff(&events, staff);
             cs->renderSpanners(&events, staffIdx);
 
-            // Pass throught the all instruments in the part
+            // Pass through the all instruments in the part
             const InstrumentList* il = part->instruments();
             for(auto j = il->begin(); j!= il->end(); j++) {
-                  // Pass throught the all channels of the instrument
+                  // Pass through the all channels of the instrument
                   // "normal", "pizzicato", "tremolo" for Strings,
                   // "normal", "mute" for Trumpet
                   foreach(const Channel* ch, j->second->channel()) {
@@ -255,7 +255,7 @@ bool ExportMidi::write(const QString& name, bool midiExpandRepeats)
                               // We need this to get the correct pitch of bends
                               // Hidden under preferences because some software
                               // crashes when receiving RPNs: https://musescore.org/en/node/37431
-                              if (channel != 9 && preferences.midiExportRPNs) {
+                              if (channel != 9 && exportRPNs) {
                                     // set pitch bend sensitivity to 12 semitones:
                                     track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_LRPN, 0));
                                     track.insert(0, MidiEvent(ME_CONTROLLER, channel, CTRL_HRPN, 0));
@@ -340,26 +340,31 @@ void ExportMidi::PauseMap::calculate(const Score* s)
 
       foreach(const RepeatSegment* rs, *s->repeatList()) {
             int startTick  = rs->tick;
-            int endTick    = startTick + rs->len;
+            int endTick    = startTick + rs->len();
             int tickOffset = rs->utick - rs->tick;
 
             auto se = tempomap->lower_bound(startTick);
-            auto ee = tempomap->lower_bound(endTick);
+            auto ee = tempomap->lower_bound(endTick+1); // +1 to include first tick of next RepeatSegment
 
             for (auto it = se; it != ee; ++it) {
                   int tick = it->first;
                   int utick = tick + tickOffset;
 
                   if (it->second.pause == 0.0) {
-                        tempomapWithPauses->insert(std::pair<const int, TEvent> (this->addPauseTicks(utick), it->second));
+                        // We have a regular tempo change. Don't include tempo change from first tick of next RepeatSegment (it will be included later).
+                        if (tick != endTick)
+                              tempomapWithPauses->insert(std::pair<const int, TEvent> (this->addPauseTicks(utick), it->second));
                         }
                   else {
-                        Fraction timeSig(sigmap->timesig(tick).timesig());
-                        qreal quarterNotesPerMeasure = (4.0 * timeSig.numerator()) / timeSig.denominator();
-                        int ticksPerMeasure =  quarterNotesPerMeasure * MScore::division; // store a full measure of ticks to keep barlines in same places
-                        tempomapWithPauses->setTempo(this->addPauseTicks(utick), quarterNotesPerMeasure / it->second.pause); // new tempo for pause
-                        this->insert(std::pair<const int, int> (utick, ticksPerMeasure + this->offsetAtUTick(utick))); // store running total of extra ticks
-                        tempomapWithPauses->setTempo(this->addPauseTicks(utick), it->second.tempo); // restore previous tempo
+                        // We have a pause event. Don't include pauses from first tick of current RepeatSegment (it was included in the previous one).
+                        if (tick != startTick) {
+                              Fraction timeSig(sigmap->timesig(tick).timesig());
+                              qreal quarterNotesPerMeasure = (4.0 * timeSig.numerator()) / timeSig.denominator();
+                              int ticksPerMeasure =  quarterNotesPerMeasure * MScore::division; // store a full measure of ticks to keep barlines in same places
+                              tempomapWithPauses->setTempo(this->addPauseTicks(utick), quarterNotesPerMeasure / it->second.pause); // new tempo for pause
+                              this->insert(std::pair<const int, int> (utick, ticksPerMeasure + this->offsetAtUTick(utick))); // store running total of extra ticks
+                              tempomapWithPauses->setTempo(this->addPauseTicks(utick), it->second.tempo); // restore previous tempo
+                              }
                         }
                   }
             }

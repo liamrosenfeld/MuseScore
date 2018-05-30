@@ -5,6 +5,7 @@
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
+      <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -33,7 +34,7 @@
         <shortName>Guit.</shortName>
         <trackName>Acoustic Guitar (Treble Clef)</trackName>
         <minPitchP>40</minPitchP>
-        <maxPitchP>83</maxPitchP>
+        <maxPitchP>84</maxPitchP>
         <minPitchA>40</minPitchA>
         <maxPitchA>83</maxPitchA>
         <transposeDiatonic>-7</transposeDiatonic>
@@ -42,7 +43,7 @@
         <concertClef>G8vb</concertClef>
         <transposingClef>G</transposingClef>
         <StringData>
-          <frets>21</frets>
+          <frets>24</frets>
           <string>52</string>
           <string>57</string>
           <string>62</string>
@@ -125,14 +126,14 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>9</lid>
+          <lid>8</lid>
           <durationType>quarter</durationType>
           <Articulation>
             <subtype>brassMuteOpen</subtype>
-            <lid>8</lid>
+            <lid>10</lid>
             </Articulation>
           <Note>
-            <lid>10</lid>
+            <lid>9</lid>
             <pitch>53</pitch>
             <tpc>13</tpc>
             <fret>3</fret>
@@ -151,14 +152,14 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>14</lid>
+          <lid>13</lid>
           <durationType>half</durationType>
           <Articulation>
             <subtype>brassMuteClosed</subtype>
-            <lid>13</lid>
+            <lid>15</lid>
             </Articulation>
           <Note>
-            <lid>15</lid>
+            <lid>14</lid>
             <pitch>55</pitch>
             <tpc>15</tpc>
             <fret>5</fret>
@@ -172,7 +173,7 @@
       <currentLayer>0</currentLayer>
       <Division>480</Division>
       <Style>
-        <createMultiMeasureRests>1</createMultiMeasureRests>
+        <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
@@ -216,7 +217,7 @@
           <shortName>Guit.</shortName>
           <trackName>Acoustic Guitar (Treble Clef)</trackName>
           <minPitchP>40</minPitchP>
-          <maxPitchP>83</maxPitchP>
+          <maxPitchP>84</maxPitchP>
           <minPitchA>40</minPitchA>
           <maxPitchA>83</maxPitchA>
           <transposeDiatonic>-7</transposeDiatonic>
@@ -225,7 +226,7 @@
           <concertClef>G8vb</concertClef>
           <transposingClef>G</transposingClef>
           <StringData>
-            <frets>21</frets>
+            <frets>24</frets>
             <string>52</string>
             <string>57</string>
             <string>62</string>
@@ -312,14 +313,14 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>9</lid>
+            <lid>8</lid>
             <durationType>quarter</durationType>
             <Articulation>
               <subtype>brassMuteOpen</subtype>
-              <lid>8</lid>
+              <lid>10</lid>
               </Articulation>
             <Note>
-              <lid>10</lid>
+              <lid>9</lid>
               <pitch>53</pitch>
               <tpc>13</tpc>
               <fret>3</fret>
@@ -338,14 +339,14 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>14</lid>
+            <lid>13</lid>
             <durationType>half</durationType>
             <Articulation>
               <subtype>brassMuteClosed</subtype>
-              <lid>13</lid>
+              <lid>15</lid>
               </Articulation>
             <Note>
-              <lid>15</lid>
+              <lid>14</lid>
               <pitch>55</pitch>
               <tpc>15</tpc>
               <fret>5</fret>
@@ -372,14 +373,14 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>9</lid>
+            <lid>8</lid>
             <durationType>quarter</durationType>
             <Articulation>
               <subtype>brassMuteOpen</subtype>
-              <lid>8</lid>
+              <lid>10</lid>
               </Articulation>
             <Note>
-              <lid>10</lid>
+              <lid>9</lid>
               <pitch>53</pitch>
               <tpc>13</tpc>
               <fret>3</fret>
@@ -398,14 +399,14 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>14</lid>
+            <lid>13</lid>
             <durationType>half</durationType>
             <Articulation>
               <subtype>brassMuteClosed</subtype>
-              <lid>13</lid>
+              <lid>15</lid>
               </Articulation>
             <Note>
-              <lid>15</lid>
+              <lid>14</lid>
               <pitch>55</pitch>
               <tpc>15</tpc>
               <fret>5</fret>

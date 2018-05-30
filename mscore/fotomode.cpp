@@ -31,6 +31,7 @@ namespace Ms {
 
 void FotoLasso::startEdit(EditData& ed)
       {
+      Element::startEdit(ed);
       ed.grips   = 8;
       ed.curGrip = Grip(0);
       QRectF view = ((ScoreView*)ed.view)->toLogical(QRect(0.0, 0.0, ed.view->geometry().width(), ed.view->geometry().height()));
@@ -86,6 +87,15 @@ void ScoreView::startFotomode()
             _foto = new FotoLasso(_score);
       else
             _foto->setScore(_score);
+      QRectF view = toLogical(QRect(0.0, 0.0, width(), height()));
+      if (_foto->bbox().isEmpty() || !view.intersects(_foto->bbox())) {
+            // rect not found - construct new rect with default size & relative position
+            qreal w = view.width();
+            qreal h = view.height();
+            QRectF r(w * .3, h * .3, w * .4, h * .4);
+            // convert to absolute position
+            _foto->setbbox(toPhysical(r));
+            }
       _foto->setVisible(true);
       _score->select(_foto);
       editData.element = _foto;
@@ -312,11 +322,11 @@ void ScoreView::fotoContextPopup(QContextMenuEvent* ev)
       popup->addAction(a);
 
       popup->addSeparator();
-      a = popup->addAction(tr("Resolution (%1 DPI)...").arg(preferences.pngResolution));
+      a = popup->addAction(tr("Resolution (%1 DPI)...").arg(preferences.getDouble(PREF_EXPORT_PNG_RESOLUTION)));
       a->setData("set-res");
       QAction* bgAction = popup->addAction(tr("Transparent background"));
       bgAction->setCheckable(true);
-      bgAction->setChecked(preferences.pngTransparent);
+      bgAction->setChecked(preferences.getBool(PREF_EXPORT_PNG_USETRANSPARENCY));
       bgAction->setData("set-bg");
 
       popup->addSeparator();
@@ -349,9 +359,9 @@ void ScoreView::fotoContextPopup(QContextMenuEvent* ev)
             return;
       QString cmd(a->data().toString());
       if (cmd == "print")
-            saveFotoAs(true, _foto->bbox());
+            saveFotoAs(true, _foto->canvasBoundingRect());
       else if (cmd == "screenshot")
-            saveFotoAs(false, _foto->bbox());
+            saveFotoAs(false, _foto->canvasBoundingRect());
       else if (cmd == "copy")
             ;
       else if (cmd == "set-res") {
@@ -359,13 +369,12 @@ void ScoreView::fotoContextPopup(QContextMenuEvent* ev)
             double resolution = QInputDialog::getDouble(this,
                tr("Set Output Resolution"),
                tr("Set output resolution for PNG"),
-               preferences.pngResolution,
+               preferences.getDouble(PREF_EXPORT_PNG_RESOLUTION),
                16.0, 2400.0, 1,
                &ok
                );
             if (ok) {
-                  preferences.pngResolution = resolution;
-                  preferences.dirty = true;
+                  preferences.setPreference(PREF_EXPORT_PNG_RESOLUTION, resolution);
                   }
             }
       else if (cmd == "resizePage") {
@@ -390,9 +399,8 @@ void ScoreView::fotoContextPopup(QContextMenuEvent* ev)
             QString val(QString("%1x%2").arg(w).arg(h));
             QSettings().setValue(QString("fotoSize%1").arg(cmd[3]), val);
             }
-      if (bgAction->isChecked() != preferences.pngTransparent) {
-            preferences.pngTransparent = bgAction->isChecked();
-            preferences.dirty = true;
+      if (bgAction->isChecked() != preferences.getBool(PREF_EXPORT_PNG_USETRANSPARENCY)) {
+            preferences.setPreference(PREF_EXPORT_PNG_USETRANSPARENCY, bgAction->isChecked());
             }
       }
 
@@ -402,12 +410,18 @@ void ScoreView::fotoContextPopup(QContextMenuEvent* ev)
 
 void ScoreView::fotoModeCopy()
       {
-      // oowriter wants transparent==false
-      bool transparent = false; // preferences.pngTransparent;
-      double convDpi   = preferences.pngResolution;
+#if defined(Q_OS_WIN)
+      // See https://bugreports.qt.io/browse/QTBUG-11463
+      // while transparent copy/paste works fine inside musescore,
+      // it does not paste into other programs in Windows though
+      bool transparent = false; // preferences.getBool(PREF_EXPORT_PNG_USETRANSPARENCY);
+#else
+      bool transparent = preferences.getBool(PREF_EXPORT_PNG_USETRANSPARENCY);
+#endif
+      double convDpi   = preferences.getDouble(PREF_EXPORT_PNG_RESOLUTION);
       double mag       = convDpi / DPI;
 
-      QRectF r(_foto->bbox());
+      QRectF r(_foto->canvasBoundingRect());
 
       int w = lrint(r.width()  * mag);
       int h = lrint(r.height() * mag);
@@ -420,14 +434,7 @@ void ScoreView::fotoModeCopy()
       printer.fill(transparent ? 0 : 0xffffffff);
       QPainter p(&printer);
       paintRect(true, p, r, mag);
-#if defined(Q_OS_WIN)
-      // workaround for apparent Qt 5.4 bug; corrupt clipboard when using setImage()
-      QPixmap px;
-      px.convertFromImage(printer);
-      QApplication::clipboard()->setPixmap(px);
-#else
       QApplication::clipboard()->setImage(printer);
-#endif
       }
 
 //---------------------------------------------------------
@@ -492,8 +499,8 @@ bool ScoreView::saveFotoAs(bool printMode, const QRectF& r)
       if (fi.suffix().toLower() != ext)
             fn += "." + ext;
 
-      bool transparent = preferences.pngTransparent;
-      double convDpi   = preferences.pngResolution;
+      bool transparent = preferences.getBool(PREF_EXPORT_PNG_USETRANSPARENCY);
+      double convDpi   = preferences.getDouble(PREF_EXPORT_PNG_RESOLUTION);
       double mag       = convDpi / DPI;
 
       if (ext == "svg")
@@ -505,16 +512,19 @@ bool ScoreView::saveFotoAs(bool printMode, const QRectF& r)
       double pr = MScore::pixelRatio;
       if (ext == "pdf") {
             QPdfWriter pdfWriter(fn);
+            pdfWriter.setResolution(preferences.getInt(PREF_EXPORT_PDF_DPI));
             mag = pdfWriter.logicalDpiX() / DPI;
-            pdfWriter.setResolution(preferences.exportPdfDpi);
-            QSizeF size(r.width() * mag, r.height() * mag);
-            QPageSize ps(QPageSize::id(size, QPageSize::Inch));
+            QSizeF size(r.width() / DPI, r.height() / DPI);
+            QPageSize ps(size, QPageSize::Inch, "", QPageSize::ExactMatch);
             pdfWriter.setPageSize(ps);
+            pdfWriter.setPageMargins(QMarginsF(0.0, 0.0, 0.0, 0.0));
             pdfWriter.setCreator("MuseScore Version: " VERSION);
             pdfWriter.setTitle(fn);
             MScore::pixelRatio = DPI / pdfWriter.logicalDpiX();
             QPainter p(&pdfWriter);
+            MScore::pdfPrinting = true;
             paintRect(printMode, p, r, mag);
+            MScore::pdfPrinting = false;
             }
       else if (ext == "svg") {
             // note that clipping is not implemented

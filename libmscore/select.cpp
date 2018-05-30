@@ -342,7 +342,7 @@ bool SelectionFilter::canSelect(const Element* e) const
       {
       if (e->isDynamic() || e->isHairpin())
           return isFiltered(SelectionFilterType::DYNAMIC);
-      if (e->isArticulation() || e->isTrill())
+      if (e->isArticulation() || e->isTrill() || e->isVibrato())
           return isFiltered(SelectionFilterType::ARTICULATION);
       if (e->type() == ElementType::LYRICS)
           return isFiltered(SelectionFilterType::LYRICS);
@@ -366,7 +366,7 @@ bool SelectionFilter::canSelect(const Element* e) const
           return isFiltered(SelectionFilterType::FRET_DIAGRAM);
       if (e->type() == ElementType::BREATH)
           return isFiltered(SelectionFilterType::BREATH);
-      if (e->isText()) // only TEXT, INSTRCHANGE and STAFFTEXT are caught here, rest are system thus not in selection
+      if (e->isTextBase()) // only TEXT, INSTRCHANGE and STAFFTEXT are caught here, rest are system thus not in selection
           return isFiltered(SelectionFilterType::OTHER_TEXT);
       if (e->isSLine()) // NoteLine, Volta
           return isFiltered(SelectionFilterType::OTHER_LINE);
@@ -434,8 +434,8 @@ void Selection::appendChord(Chord* chord)
                   _el.append(dot);
 
             if (note->tieFor() && (note->tieFor()->endElement() != 0)) {
-                  if (note->tieFor()->endElement()->type() == ElementType::NOTE) {
-                        Note* endNote = static_cast<Note*>(note->tieFor()->endElement());
+                  if (note->tieFor()->endElement()->isNote()) {
+                        Note* endNote = toNote(note->tieFor()->endElement());
                         Segment* s = endNote->chord()->segment();
                         if (s->tick() < tickEnd())
                               _el.append(note->tieFor());
@@ -487,14 +487,14 @@ void Selection::updateSelectedElements()
                               if (e)
                                     appendFiltered(e);
                               }
-                        for (Articulation* art : cr->articulations())
-                              appendFiltered(art);
                         }
                   if (e->isChord()) {
                         Chord* chord = toChord(e);
                         for (Chord* graceNote : chord->graceNotes())
                               if (canSelect(graceNote)) appendChord(graceNote);
                         appendChord(chord);
+                        for (Articulation* art : chord->articulations())
+                              appendFiltered(art);
                         }
                   else {
                         appendFiltered(e);
@@ -508,6 +508,8 @@ void Selection::updateSelectedElements()
             Spanner* sp = (*i).second;
             // ignore spanners belonging to other tracks
             if (sp->track() < startTrack || sp->track() >= endTrack)
+                  continue;
+            if (!canSelectVoice(sp->track()))
                   continue;
             // ignore voltas
             if (sp->type() == ElementType::VOLTA)
@@ -796,6 +798,7 @@ Enabling copying of more element types requires enabling pasting in Score::paste
                   case ElementType::HAIRPIN_SEGMENT:
                   case ElementType::OTTAVA_SEGMENT:
                   case ElementType::TRILL_SEGMENT:
+                  case ElementType::VIBRATO_SEGMENT:
                   case ElementType::TEXTLINE_SEGMENT:
                   case ElementType::VOLTA_SEGMENT:
                   case ElementType::PEDAL_SEGMENT:
@@ -955,8 +958,8 @@ std::vector<Note*> Selection::noteList(int selTrack) const
 
       if (_state == SelState::LIST) {
             foreach(Element* e, _el) {
-                  if (e->type() == ElementType::NOTE)
-                        nl.push_back(static_cast<Note*>(e));
+                  if (e->isNote())
+                        nl.push_back(toNote(e));
                   }
             }
       else if (_state == SelState::RANGE) {
@@ -973,7 +976,7 @@ std::vector<Note*> Selection::noteList(int selTrack) const
                               if (e == 0 || e->type() != ElementType::CHORD
                                  || (selTrack != -1 && selTrack != track))
                                     continue;
-                              Chord* c = static_cast<Chord*>(e);
+                              Chord* c = toChord(e);
                               nl.insert(nl.end(), c->notes().begin(), c->notes().end());
                               for (Chord* g : c->graceNotes()) {
                                     nl.insert(nl.end(), g->notes().begin(), g->notes().end());
@@ -995,7 +998,7 @@ static bool checkStart(Element* e)
       {
       if (e == 0 || !e->isChordRest())
             return false;
-      ChordRest* cr = static_cast<ChordRest*>(e);
+      ChordRest* cr = toChordRest(e);
       bool rv = false;
       if (cr->tuplet()) {
             // check that complete tuplet is selected, all the way up to top level
@@ -1009,7 +1012,7 @@ static bool checkStart(Element* e)
             }
       else if (cr->type() == ElementType::CHORD) {
             rv = false;
-            Chord* chord = static_cast<Chord*>(cr);
+            Chord* chord = toChord(cr);
             if (chord->tremolo() && chord->tremolo()->twoNotes())
                   rv = chord->tremolo()->chord2() == chord;
             }
@@ -1026,7 +1029,7 @@ static bool checkEnd(Element* e, int endTick)
       {
       if (e == 0 || !e->isChordRest())
             return false;
-      ChordRest* cr = static_cast<ChordRest*>(e);
+      ChordRest* cr = toChordRest(e);
       bool rv = false;
       if (cr->tuplet()) {
             // check that complete tuplet is selected, all the way up to top level
@@ -1038,13 +1041,13 @@ static bool checkEnd(Element* e, int endTick)
                   tuplet = tuplet->tuplet();
                   }
             // also check that the selection extends to the end of the top-level tuplet
-            tuplet = static_cast<Tuplet*>(e);
+            tuplet = toTuplet(e);
             if (tuplet->elements().front()->tick() + tuplet->actualTicks() > endTick)
                   return true;
             }
       else if (cr->type() == ElementType::CHORD) {
             rv = false;
-            Chord* chord = static_cast<Chord*>(cr);
+            Chord* chord = toChord(cr);
             if (chord->tremolo() && chord->tremolo()->twoNotes())
                   rv = chord->tremolo()->chord1() == chord;
             }
@@ -1054,7 +1057,7 @@ static bool checkEnd(Element* e, int endTick)
 //---------------------------------------------------------
 //   canCopy
 //    return false if range selection intersects a tuplet
-//    or a tremolo, or a local timne signature
+//    or a tremolo, or a local time signature
 //---------------------------------------------------------
 
 bool Selection::canCopy() const

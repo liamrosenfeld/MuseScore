@@ -22,8 +22,6 @@ namespace Ms {
 //---------------------------------------------------------
 
 class Lasso : public Element {
-      Q_GADGET
-
    public:
       Lasso(Score*);
       virtual Lasso* clone() const override        { return new Lasso(*this); }
@@ -32,10 +30,11 @@ class Lasso : public Element {
       virtual bool isEditable() const override     { return true; }
       virtual void editDrag(EditData&) override;
       virtual void updateGrips(EditData&) const override;
+      virtual void endDrag(EditData&)              {}
 
       virtual void startEdit(EditData&) override;
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
       };
 
 

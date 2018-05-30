@@ -23,9 +23,7 @@ namespace Ms {
 //   @@ Ambitus
 //---------------------------------------------------------
 
-class Ambitus : public Element {
-      Q_GADGET
-
+class Ambitus final : public Element {
       NoteHead::Group     _noteHeadGroup;
       NoteHead::Type      _noteHeadType;
       MScore::DirectionH  _dir;
@@ -43,7 +41,6 @@ class Ambitus : public Element {
       void  normalize();
 
    public:
-
       Ambitus(Score* s);
       virtual Ambitus* clone() const override         { return new Ambitus(*this); }
 
@@ -91,9 +88,9 @@ class Ambitus : public Element {
       virtual QString   accessibleInfo() const override;
 
       // properties
-      QVariant getProperty(P_ID ) const;
-      bool setProperty(P_ID propertyId, const QVariant&);
-      QVariant propertyDefault(P_ID id) const;
+      QVariant getProperty(Pid ) const;
+      bool setProperty(Pid propertyId, const QVariant&);
+      QVariant propertyDefault(Pid id) const;
 
       virtual Element* nextSegmentElement() override;
       virtual Element* prevSegmentElement() override;

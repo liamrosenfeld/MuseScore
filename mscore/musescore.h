@@ -205,7 +205,7 @@ class MeasuresDialog : public QDialog, public Ui::MeasuresDialogBase {
 class MuseScoreApplication : public QtSingleApplication {
    public:
       QStringList paths;
-      MuseScoreApplication(const QString &id, int &argc, char **argv)
+      MuseScoreApplication(const QString& id, int &argc, char **argv)
          : QtSingleApplication(id, argc, argv) {
             };
       virtual bool event(QEvent *ev) override;
@@ -234,7 +234,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       static const std::list<const char*> _allPlaybackControlEntries;
       std::list<const char*> _playbackControlEntries { _allPlaybackControlEntries };
-      
+
       QVBoxLayout* layout;    // main window layout
       QSplitter* splitter;
       ScoreTab* tab1;
@@ -459,6 +459,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       void updateViewModeCombo();
       void switchLayoutMode(LayoutMode);
+      void setPlayRepeats(bool repeat);
 
    private slots:
       void cmd(QAction* a, const QString& cmd);
@@ -583,6 +584,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       PianorollEditor* getPianorollEditor() const { return pianorollEditor; }
       DrumrollEditor* getDrumrollEditor() const   { return drumrollEditor; }
       PianoTools* pianoTools() const              { return _pianoTools; }
+      PluginManager* getPluginManager() const     { return pluginManager; }
       void writeSessionFile(bool);
       bool restoreSession(bool);
       bool splitScreen() const { return _splitScreen; }
@@ -767,11 +769,14 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       void setNoteInputMenuEntries(std::list<const char*> l)         { _noteInputMenuEntries = l; }
       void populateNoteInputMenu();
+      static void updateUiStyleAndTheme();
 
       void showError();
 
       static void saveGeometry(QWidget const*const qw);
       static void restoreGeometry(QWidget*const qw);
+
+      void updateWindowTitle(Score* score);
       };
 
 extern MuseScore* mscore;

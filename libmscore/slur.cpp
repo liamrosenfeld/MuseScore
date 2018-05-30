@@ -40,21 +40,21 @@ void SlurSegment::draw(QPainter* painter) const
                   painter->setBrush(QBrush(pen.color()));
                   pen.setCapStyle(Qt::RoundCap);
                   pen.setJoinStyle(Qt::RoundJoin);
-                  pen.setWidthF(score()->styleP(StyleIdx::SlurEndWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurEndWidth));
                   break;
             case 1:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(StyleIdx::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
                   pen.setStyle(Qt::DotLine);
                   break;
             case 2:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(StyleIdx::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
                   pen.setStyle(Qt::DashLine);
                   break;
             case 3:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(StyleIdx::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
                   pen.setStyle(Qt::CustomDashLine);
                   QVector<qreal> dashes { 5.0, 5.0 };
                   pen.setDashPattern(dashes);
@@ -110,7 +110,7 @@ bool SlurSegment::edit(EditData& ed)
       Slur* sl = slur();
 
       if (ed.key == Qt::Key_X) {
-            sl->undoChangeProperty(P_ID::SLUR_DIRECTION, QVariant::fromValue<Direction>(sl->up() ? Direction::DOWN : Direction::UP));
+            sl->undoChangeProperty(Pid::SLUR_DIRECTION, QVariant::fromValue<Direction>(sl->up() ? Direction::DOWN : Direction::UP));
             sl->layout();
             return true;
             }
@@ -164,15 +164,15 @@ void SlurSegment::changeAnchor(EditData& ed, Element* element)
       {
       if (ed.curGrip == Grip::START) {
             int ticks = spanner()->endElement()->tick() - element->tick();
-            spanner()->undoChangeProperty(P_ID::SPANNER_TICK, element->tick());
-            spanner()->undoChangeProperty(P_ID::SPANNER_TICKS, ticks);
-            spanner()->undoChangeProperty(P_ID::TRACK, element->track());
+            spanner()->undoChangeProperty(Pid::SPANNER_TICK, element->tick());
+            spanner()->undoChangeProperty(Pid::SPANNER_TICKS, ticks);
+            spanner()->undoChangeProperty(Pid::TRACK, element->track());
             if (score()->spannerMap().removeSpanner(spanner()))
                   score()->addSpanner(spanner());
             }
       else {
-            spanner()->undoChangeProperty(P_ID::SPANNER_TICKS,  element->tick() - spanner()->startElement()->tick());
-            spanner()->undoChangeProperty(P_ID::SPANNER_TRACK2, element->track());
+            spanner()->undoChangeProperty(Pid::SPANNER_TICKS,  element->tick() - spanner()->startElement()->tick());
+            spanner()->undoChangeProperty(Pid::SPANNER_TRACK2, element->track());
             }
       int segments  = spanner()->spannerSegments().size();
       ups(ed.curGrip).off = QPointF();
@@ -250,7 +250,7 @@ void SlurSegment::computeBezier(QPointF p6o)
       QPointF p3(c1, -shoulderH);
       QPointF p4(c2, -shoulderH);
 
-      qreal w = score()->styleP(StyleIdx::SlurMidWidth) - score()->styleP(StyleIdx::SlurEndWidth);
+      qreal w = score()->styleP(Sid::SlurMidWidth) - score()->styleP(Sid::SlurEndWidth);
       if ((c2 - c1) <= _spatium)
             w *= .5;
       QPointF th(0.0, w);    // thickness of slur
@@ -348,6 +348,7 @@ inline static qreal slurDistance(const Shape& shape, const QPointF& pt, qreal sd
 //    p1, p2  are in System coordinates
 //---------------------------------------------------------
 
+#if 0
 void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
       if (autoplace()) {
@@ -359,7 +360,7 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       ups(Grip::END).p   = p2;
       computeBezier();
 
-      if (autoplace() && system()) {
+      if (MScore::autoplaceSlurs && autoplace() && system()) {
             bool up = slur()->up();
             //
             // lookup segments for collision detection
@@ -370,7 +371,7 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   Collision(qreal a, const QPointF b) : dist(a), p(b) {}
                   };
             QList<Collision> pl;                // skyline
-            qreal sdist = score()->styleP(StyleIdx::SlurMinDistance);
+            qreal sdist = score()->styleP(Sid::SlurMinDistance);
 
             QPointF pp1 = ups(Grip::START).p;
             QPointF pp2 = ups(Grip::END).p;
@@ -388,22 +389,28 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                         continue;
                   qreal x1 = s->x() + s->measure()->x();
                   qreal x2 = x1 + s->width();
+
                   if (pp1.x() > x2)
                         continue;
-                  if (pp2.x() >= x1 && pp2.x() < x2)
+//                  if (pp2.x() >= x1 && pp2.x() < x2)
+//                        break;
+                  if (pp2.x() < x1)
                         break;
+
+                  Shape s2 = s->staffShape(staffIdx()).translated(s->pos() + s->measure()->pos());
+
                   if (up) {
                         QPointF pt = QPointF(s->x() + s->measure()->x(), s->staffShape(staffIdx()).top() + s->y() + s->measure()->y());
-                        qreal dist = _shape.minVerticalDistance(s->staffShape(staffIdx()).translated(s->pos() + s->measure()->pos()));
+                        qreal dist = _shape.minVerticalDistance(s2);
                         if (dist > 0.0) {
                               if (pt.x() - x1 < nearDistance) {
                                     // collision near beginning of slur
-                                    printf("collision near beginning of slur (up)\n");
+//                                    printf("collision near beginning of slur (up)\n");
                                     _ups[int(Grip::START)].off.ry() -= dist * .8;
                                     recomputeBezier = true;
                                     }
                               else if (x2  - pt.x() < nearDistance) {
-                                    printf("collision near end of slur (up)\n");
+//                                    printf("collision near end of slur (up)\n");
                                     _ups[int(Grip::END)].off.ry() -= dist * .8;
                                     recomputeBezier = true;
                                     }
@@ -411,17 +418,17 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                         }
                   else {
                         QPointF pt = QPointF(s->x() + s->measure()->x(), s->staffShape(staffIdx()).bottom() + s->y() + s->measure()->y());
-                        qreal dist = s->staffShape(staffIdx()).translated(s->pos() + s->measure()->pos()).minVerticalDistance(_shape);
+                        qreal dist = s2.minVerticalDistance(_shape);
                         if (dist > 0.0) {
                               if (pt.x() - x1 < nearDistance) {
                                     // collision near beginning of slur
 
-                                    printf("collision near beginning of slur (down)\n");
+//                                    printf("collision near beginning of slur (down)\n");
                                     _ups[int(Grip::START)].off.ry() += dist * .8;
                                     recomputeBezier = true;
                                     }
                               else if (x2  - pt.x() < nearDistance) {
-                                    printf("collision near end of slur (down)\n");
+//                                    printf("collision near end of slur (down)\n");
                                     _ups[int(Grip::END)].off.ry() += dist * .8;
                                     recomputeBezier = true;
                                     }
@@ -441,12 +448,13 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   qreal x2 = x1 + s->width();
                   if (pp1.x() > x2)
                         continue;
-                  if (pp2.x() >= x1 && pp2.x() < x2)
+//                  if (pp2.x() >= x1 && pp2.x() < x2)
+//                        break;
+                  if (pp2.x() < x1)
                         break;
                   if (up) {
                         QPointF pt = QPointF(s->x() + s->measure()->x(), s->staffShape(staffIdx()).top() + s->y() + s->measure()->y());
                         qreal dist = _shape.minVerticalDistance(s->staffShape(staffIdx()).translated(s->pos() + s->measure()->pos()));
-//                        dist += sdist;
                         if (dist > 0.0) {
                               pl.append(Collision(dist, pt));
 //                            printf("collision at %d %s %f %f\n", s->tick(), s->subTypeName(), pt.x(), pt.y());
@@ -455,9 +463,10 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   else {
                         QPointF pt = QPointF(s->x() + s->measure()->x(), s->staffShape(staffIdx()).bottom() + s->y() + s->measure()->y());
                         qreal dist = s->staffShape(staffIdx()).translated(s->pos() + s->measure()->pos()).minVerticalDistance(_shape);
-//                        dist += sdist;
-                        if (dist > 0.0)
+                        if (dist > 0.0) {
+//                              printf("collision at %d %s %f %f\n", s->tick(), s->subTypeName(), pt.x(), pt.y());
                               pl.append(Collision(-dist, pt));
+                              }
                         }
                   }
             //
@@ -492,17 +501,63 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                         }
                   }
             }
-      else {
-            if ((staffIdx() > 0) && score()->mscVersion() < 206 && !readPos().isNull()) {
-                  QPointF staffOffset;
-                  if (system() && track() >= 0)
-                        staffOffset = QPointF(0.0, system()->staff(staffIdx())->y());
-                  setReadPos(readPos() + staffOffset);
+      setbbox(path.boundingRect());
+      }
+
+#else
+
+void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
+      {
+      if (autoplace()) {
+            for (UP& up : _ups)
+                  up.off = QPointF();
+            rUserYoffset() = 0;
+            }
+      ups(Grip::START).p = p1;
+      ups(Grip::END).p   = p2;
+      computeBezier();
+
+      if (MScore::autoplaceSlurs && autoplace() && system()) {
+            bool up = slur()->up();
+
+            qreal gdist = 0.0;
+            Segment* ls = system()->lastMeasure()->last();
+            Segment* fs = system()->firstMeasure()->first();
+            QPointF pp1 = ups(Grip::START).p;
+            QPointF pp2 = ups(Grip::END).p;
+            for (Segment* s = fs; s && s != ls; s = s->next1()) {
+                  if (!s->enabled())
+                        continue;
+                  qreal x1 = s->x() + s->measure()->x();
+                  qreal x2 = x1 + s->width();
+                  if (pp1.x() > x2)
+                        continue;
+                  if (pp2.x() < x1)
+                        break;
+                  if (up) {
+                        //QPointF pt = QPointF(s->x() + s->measure()->x(), s->staffShape(staffIdx()).top() + s->y() + s->measure()->y());
+                        qreal dist = _shape.minVerticalDistance(s->staffShape(staffIdx()).translated(s->pos() + s->measure()->pos()));
+                        if (dist > 0.0)
+                              gdist = qMax(gdist, dist);
+                        }
+                  else {
+                        //QPointF pt = QPointF(s->x() + s->measure()->x(), s->staffShape(staffIdx()).bottom() + s->y() + s->measure()->y());
+                        qreal dist = s->staffShape(staffIdx()).translated(s->pos() + s->measure()->pos()).minVerticalDistance(_shape);
+                        if (dist > 0.0)
+                              gdist = qMax(gdist, dist);
+                        }
                   }
-            adjustReadPos();
+            if (gdist > 0.0) {
+                  if (up) {
+                        rUserYoffset() -= (gdist + spatium() * .5);
+                        }
+                  else
+                        rUserYoffset() += (gdist + spatium() * .5);
+                  }
             }
       setbbox(path.boundingRect());
       }
+#endif
 
 //---------------------------------------------------------
 //   isEdited
@@ -526,6 +581,7 @@ static qreal fixArticulations(qreal yo, Chord* c, qreal _up)
       //
       // handle special case of tenuto and staccato;
       //
+#if 1
       const QVector<Articulation*>& al = c->articulations();
       if (al.size() >= 2) {
             Articulation* a = al.at(1);
@@ -541,6 +597,7 @@ static qreal fixArticulations(qreal yo, Chord* c, qreal _up)
             else if (a->isTenuto() || a->isStaccato())
                   return a->y() + (a->height() + c->score()->spatium() * .3) * _up;
             }
+#endif
       return yo;
       }
 
@@ -565,7 +622,7 @@ void Slur::slurPosChord(SlurPos* sp)
             }
       Note* _startNote = stChord->downNote();
       Note* _endNote   = enChord->downNote();
-      qreal hw         = _startNote->headWidth();
+      qreal hw         = _startNote->bboxRightPos();
       qreal __up       = _up ? -1.0 : 1.0;
       qreal _spatium = spatium();
 
@@ -696,7 +753,7 @@ void Slur::slurPos(SlurPos* sp)
                   // place slur starting point at stem base point
                   pt = sc->stemPos() - sc->pagePos() + sc->stem()->p2();
                   if (useTablature)                   // in tabs, stems are centred on note:
-                        pt.rx() = hw1 * 0.5;          // skip half notehead to touch stem
+                        pt.rx() = hw1 * 0.5 + (note1 ? note1->bboxXShift() : 0.0);          // skip half notehead to touch stem, anatoly-os: incorrect. half notehead width is not always the stem position
                   sp->p1 += pt;
                   sp->p1 += QPointF(0.35 * _spatium, 0.25 * _spatium);  // clear the stem (x) and the notehead (y)
                   break;
@@ -726,7 +783,7 @@ void Slur::slurPos(SlurPos* sp)
             bool stemPos = false;   // p1 starts at chord stem side
 
             // default positions
-            xo = hw1 * .5;
+            xo = hw1 * .5 + (note1 ? note1->bboxXShift() : 0.0);
             if (note1)
                   yo = note1->pos().y();
             else if (_up)
@@ -822,7 +879,7 @@ void Slur::slurPos(SlurPos* sp)
             if (sa2 == SlurAnchor::NONE) {
 
                   // default positions
-                  xo = hw2 * .5;
+                  xo = hw2 * .5 + (note2 ? note2->bboxXShift() : 0.0);
                   if (note2)
                         yo = note2->pos().y();
                   else if (_up)
@@ -1150,7 +1207,7 @@ SpannerSegment* Slur::layoutSystem(System* system)
 
 void Slur::layout()
       {
-      printf("Slur::layout %p\n", this);
+//      printf("Slur::layout %p\n", this);
 
       if (track2() == -1)
             setTrack2(track());

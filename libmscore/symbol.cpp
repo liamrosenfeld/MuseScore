@@ -69,7 +69,7 @@ void Symbol::layout()
       //      e->layout();
       setbbox(_scoreFont ? _scoreFont->bbox(_sym, magS()) : symBbox(_sym));
       ElementLayout::layout(this);
-      BSymbol::layout();      // adjustReadPos() happens here
+      BSymbol::layout();
       }
 
 //---------------------------------------------------------
@@ -118,9 +118,6 @@ void Symbol::read(XmlReader& e)
                               // if symbol name not found, fall back to user names
                               // TODO : does it make sense? user names are probably localized
                               symId = Sym::userName2id(val);
-                              // if not found, look into old names
-                              if (symId == SymId::noSym)
-                                    symId = Sym::oldName2id(val);
                               if (symId == SymId::noSym) {
                                     qDebug("unknown symbol <%s>, falling back to no symbol", qPrintable(val));
                                     // set a default symbol, or layout() will crash
@@ -135,7 +132,6 @@ void Symbol::read(XmlReader& e)
             else if (tag == "Symbol") {
                   Symbol* s = new Symbol(score());
                   s->read(e);
-                  s->adjustReadPos();
                   add(s);
                   }
             else if (tag == "Image") {
@@ -200,7 +196,7 @@ QPointF BSymbol::canvasPos() const
       {
       if (parent() && (parent()->type() == ElementType::SEGMENT)) {
             QPointF p(pos());
-            Segment* s = static_cast<Segment*>(parent());
+            Segment* s = toSegment(parent());
 
             System* system = s->measure()->system();
             if (system) {
@@ -304,7 +300,6 @@ void FSymbol::layout()
             s = QChar(_code);
       QFontMetricsF fm(_font, MScore::paintDevice());
       setbbox(fm.boundingRect(s));
-      adjustReadPos();
       }
 
 //---------------------------------------------------------

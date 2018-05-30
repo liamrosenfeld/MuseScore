@@ -25,7 +25,6 @@ class Text;
 //---------------------------------------------------------
 
 class TBox : public VBox {
-      Q_GADGET
       Text* _text;
 
    public:
@@ -33,7 +32,7 @@ class TBox : public VBox {
       TBox(const TBox&);
       ~TBox();
       virtual TBox* clone() const        { return new TBox(*this); }
-      virtual ElementType type() const { return ElementType::TBOX;       }
+      virtual ElementType type() const   { return ElementType::TBOX;       }
       virtual void write(XmlWriter&) const override;
       using VBox::write;
       virtual void read(XmlReader&) override;

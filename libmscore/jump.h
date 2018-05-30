@@ -17,7 +17,7 @@
 
 namespace Ms {
 
-enum class SubStyle;
+enum class SubStyleId;
 
 //---------------------------------------------------------
 //   @@ Jump
@@ -30,16 +30,7 @@ enum class SubStyle;
 //   @P playUntil   string
 //---------------------------------------------------------
 
-
-class Jump : public Text {
-      Q_GADGET
-
-      Q_PROPERTY(QString continueAt  READ continueAt  WRITE undoSetContinueAt)
-      Q_PROPERTY(QString jumpTo      READ jumpTo      WRITE undoSetJumpTo)
-      Q_PROPERTY(QString playUntil   READ playUntil   WRITE undoSetPlayUntil)
-      //Q_Property(Ms::Jump::Type      READ jumpType)
-      //Q_ENUMS(Type)
-
+class Jump final : public TextBase {
       QString _jumpTo;
       QString _playUntil;
       QString _continueAt;
@@ -86,9 +77,9 @@ class Jump : public Text {
 
       virtual bool systemFlag() const override  { return true;        }
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       Element* nextSegmentElement() override;
       Element* prevSegmentElement() override;
@@ -101,7 +92,7 @@ class Jump : public Text {
 
 struct JumpTypeTable {
       Jump::Type type;
-      SubStyle subStyle;
+      SubStyleId subStyle;
       const char* text;
       const char* jumpTo;
       const char* playUntil;

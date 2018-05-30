@@ -71,6 +71,7 @@ bool MScore::noVerticalStretch   = false;
 bool MScore::showBoundingRect    = false;
 bool MScore::showCorruptedMeasures = true;
 bool MScore::useFallbackFont       = true;
+bool MScore::autoplaceSlurs        = true;
 // #endif
 
 bool  MScore::saveTemplateMode = false;
@@ -226,7 +227,6 @@ void MScore::init()
       qRegisterMetaType<Note::ValueType>   ("ValueType");
 
       qRegisterMetaType<MScore::DirectionH>("DirectionH");
-      qRegisterMetaType<Element::Placement>("Placement");
       qRegisterMetaType<Spanner::Anchor>   ("Anchor");
       qRegisterMetaType<NoteHead::Group>   ("NoteHeadGroup");
       qRegisterMetaType<NoteHead::Type>("NoteHeadType");
@@ -244,7 +244,6 @@ void MScore::init()
       qRegisterMetaType<HairpinType>("HairpinType");
       qRegisterMetaType<Lyrics::Syllabic>("Syllabic");
       qRegisterMetaType<LayoutBreak::Type>("LayoutBreakType");
-      qRegisterMetaType<Glissando::Type>("GlissandoType");
 
       //classed enumerations
 //      qRegisterMetaType<MSQE_StyledPropertyListIdx::E>("StyledPropertyListIdx");
@@ -296,7 +295,7 @@ void MScore::init()
       //
       _baseStyle.precomputeValues();
       QSettings s;
-      QString defStyle = s.value("defaultStyle").toString();
+      QString defStyle = s.value("score/style/defaultStyleFile").toString();
       if (!(MScore::testMode || defStyle.isEmpty())) {
             QFile f(defStyle);
             if (f.open(QIODevice::ReadOnly)) {
@@ -306,7 +305,7 @@ void MScore::init()
                   }
             }
       _defaultStyle.precomputeValues();
-      QString partStyle = s.value("partStyle").toString();
+      QString partStyle = s.value("score/style/partStyleFile").toString();
       if (!(MScore::testMode || partStyle.isEmpty())) {
             QFile f(partStyle);
             if (f.open(QIODevice::ReadOnly)) {
@@ -357,6 +356,25 @@ void MScore::init()
 #ifdef DEBUG_SHAPES
       testShapes();
 #endif
+}
+
+//---------------------------------------------------------
+//   readDefaultStyle
+//---------------------------------------------------------
+
+bool MScore::readDefaultStyle(QString file)
+      {
+      if (file.isEmpty())
+            return false;
+      MStyle style = defaultStyle();
+      QFile f(file);
+      if (!f.open(QIODevice::ReadOnly))
+            return false;
+      bool rv = style.load(&f);
+      if (rv)
+            setDefaultStyle(style);
+      f.close();
+      return rv;
       }
 
 //---------------------------------------------------------
@@ -365,7 +383,7 @@ void MScore::init()
 
 void MScore::defaultStyleForPartsHasChanged()
       {
-// TODO ??
+// TODO what is needed here?
 //      delete _defaultStyleForParts;
 //      _defaultStyleForParts = 0;
       }
@@ -420,14 +438,14 @@ QQmlEngine* MScore::qml()
             _qml->setImportPathList(importPaths);
 #endif
             const char* enumErr = "You can't create an enumeration";
-            qmlRegisterType<MsProcess>  ("MuseScore", 3, 0, "QProcess");
+//TODO-ws            qmlRegisterType<MsProcess>  ("MuseScore", 3, 0, "QProcess");
             qmlRegisterType<FileIO, 1>  ("FileIO",    3, 0, "FileIO");
             //-----------mscore bindings
             qmlRegisterUncreatableMetaObject(Ms::staticMetaObject, "MuseScore", 3, 0, "Ms", enumErr);
-//            qmlRegisterUncreatableType<Direction>("MuseScore", 3, 0, "Direction", tr(enumErr));
+//            qmlRegisterUncreatableType<Direction>("MuseScore", 3, 0, "Direction", QObject::tr(enumErr));
 
             qmlRegisterType<MScore>     ("MuseScore", 3, 0, "MScore");
-            qmlRegisterType<MsScoreView>("MuseScore", 3, 0, "ScoreView");
+//TODO-ws            qmlRegisterType<MsScoreView>("MuseScore", 3, 0, "ScoreView");
 
             qmlRegisterType<Score>      ("MuseScore", 3, 0, "Score");
             qmlRegisterType<Cursor>     ("MuseScore", 3, 0, "Cursor");
@@ -464,7 +482,7 @@ QQmlEngine* MScore::qml()
 
 
             //classed enumerations
-            qmlRegisterUncreatableType<MSQE_StyledPropertyListIdx>("MuseScore", 1, 0, "StyledPropertyListIdx", tr("You can't create an enum"));
+            qmlRegisterUncreatableType<MSQE_StyledPropertyListIdx>("MuseScore", 1, 0, "StyledPropertyListIdx", QObject::tr("You can't create an enum"));
             qmlRegisterUncreatableType<MSQE_BarLineType>("MuseScore", 1, 0, "BarLineType", enumErr);
 
             //-----------virtual classes

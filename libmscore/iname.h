@@ -25,7 +25,7 @@ enum class InstrumentNameType : char {
 //   InstrumentName
 //---------------------------------------------------------
 
-class InstrumentName : public Text  {
+class InstrumentName final : public TextBase  {
       InstrumentNameType _instrumentNameType;
       int _layoutPos { 0 };
 
@@ -42,9 +42,9 @@ class InstrumentName : public Text  {
       void setInstrumentNameType(InstrumentNameType v);
       void setInstrumentNameType(const QString& s);
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
       };
 
 

@@ -41,24 +41,20 @@ void ScoreView::setDropTarget(const Element* el)
       if (dropTarget != el) {
             if (dropTarget) {
                   dropTarget->setDropTarget(false);
-//                  _score->addRefresh(dropTarget->canvasBoundingRect());
                   dropTarget = 0;
                   }
             dropTarget = el;
             if (dropTarget) {
                   dropTarget->setDropTarget(true);
-//                  _score->addRefresh(dropTarget->canvasBoundingRect());
                   }
             }
       if (!dropAnchor.isNull()) {
             QRectF r;
             r.setTopLeft(dropAnchor.p1());
             r.setBottomRight(dropAnchor.p2());
-//            _score->addRefresh(r.normalized());
             dropAnchor = QLineF();
             }
       if (dropRectangle.isValid()) {
-//            _score->addRefresh(dropRectangle);
             dropRectangle = QRectF();
             }
       update();
@@ -217,7 +213,7 @@ void ScoreView::dragEnterEvent(QDragEnterEvent* event)
             if (MScore::debugMode)
                   qDebug("ScoreView::dragEnterEvent Symbol: <%s>", a.data());
 
-            XmlReader e(_score, a);
+            XmlReader e(a);
             editData.dragOffset = QPoint();
             Fraction duration;  // dummy
             ElementType type = Element::readType(e, &editData.dragOffset, &duration);
@@ -295,7 +291,7 @@ void ScoreView::dragMoveEvent(QDragMoveEvent* event)
                               int staffIdx;
                               e = _score->pos2measure(pos, &staffIdx, 0, 0, 0);
                               }
-                        if (e && (e->isNote() || e->isSymbol() || e->isImage() || e->isText())) {
+                        if (e && (e->isNote() || e->isSymbol() || e->isImage() || e->isTextBase())) {
                               EditData dropData(this);
                               dropData.pos        = pos;
                               dropData.element    = editData.element;
@@ -304,19 +300,21 @@ void ScoreView::dragMoveEvent(QDragMoveEvent* event)
                               if (e->acceptDrop(dropData)) {
                                     setDropTarget(e);
                                     event->accept();
-                                    return;
                                     }
                               else {
                                     setDropTarget(0);
                                     event->ignore();
-                                    return;
                                     }
+                              return;
                               }
                         }
                         // fall through
 
                   case ElementType::VOLTA:
                   case ElementType::PEDAL:
+                  case ElementType::LET_RING:
+                  case ElementType::VIBRATO:
+                  case ElementType::PALM_MUTE:
                   case ElementType::DYNAMIC:
                   case ElementType::OTTAVA:
                   case ElementType::TRILL:
@@ -336,6 +334,7 @@ void ScoreView::dragMoveEvent(QDragMoveEvent* event)
                   case ElementType::GLISSANDO:
                   case ElementType::BRACKET:
                   case ElementType::ARTICULATION:
+                  case ElementType::FERMATA:
                   case ElementType::CHORDLINE:
                   case ElementType::BEND:
                   case ElementType::ACCIDENTAL:
@@ -389,13 +388,11 @@ void ScoreView::dragMoveEvent(QDragMoveEvent* event)
                         break;
                   }
 
-            // _score->update();
             return;
             }
 
       const QMimeData* md = event->mimeData();
       if (md->hasUrls()) {
-printf("===drag move urls\n");
             QList<QUrl>ul = md->urls();
             QUrl u = ul.front();
             if (u.scheme() == "file" || u.scheme() == "http") {
@@ -455,6 +452,20 @@ printf("===drag move urls\n");
 
 void ScoreView::dropEvent(QDropEvent* event)
       {
+      switch (state) {
+            case ViewState::PLAY:
+                  event->ignore();
+                  return;
+            case ViewState::EDIT:
+                  changeState(ViewState::NORMAL);
+                  break;
+
+            // TODO: check/handle more states
+
+            case ViewState::NORMAL:
+            default:
+                  break;
+            }
       QPointF pos(imatrix.map(QPointF(event->pos())));
 
       EditData dropData(this);
@@ -473,6 +484,9 @@ void ScoreView::dropEvent(QDropEvent* event)
                   case ElementType::OTTAVA:
                   case ElementType::TRILL:
                   case ElementType::PEDAL:
+                  case ElementType::LET_RING:
+                  case ElementType::VIBRATO:
+                  case ElementType::PALM_MUTE:
                   case ElementType::HAIRPIN:
                   case ElementType::TEXTLINE:
                         {
@@ -535,6 +549,7 @@ void ScoreView::dropEvent(QDropEvent* event)
                   case ElementType::GLISSANDO:
                   case ElementType::BRACKET:
                   case ElementType::ARTICULATION:
+                  case ElementType::FERMATA:
                   case ElementType::CHORDLINE:
                   case ElementType::BEND:
                   case ElementType::ACCIDENTAL:
@@ -712,7 +727,7 @@ void ScoreView::dropEvent(QDropEvent* event)
             }
       else if (etype == ElementType::MEASURE_LIST || etype == ElementType::STAFF_LIST) {
             _score->startCmd();
-            XmlReader xml(_score, data);
+            XmlReader xml(data);
             System* s = measure->system();
             int idx   = s->y2staff(pos.y());
             if (idx != -1) {
@@ -749,8 +764,8 @@ void ScoreView::dragLeaveEvent(QDragLeaveEvent*)
 
 bool ScoreView::dropCanvas(Element* e)
       {
-      if (e->type() == ElementType::ICON) {
-            switch(static_cast<Icon*>(e)->iconType()) {
+      if (e->isIcon()) {
+            switch (toIcon(e)->iconType()) {
                   case IconType::VFRAME:
                         score()->insertMeasure(ElementType::VBOX, 0);
                         break;

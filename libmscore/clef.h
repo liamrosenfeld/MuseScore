@@ -127,11 +127,7 @@ class ClefInfo {
 //   @P small         bool    small, mid-staff clef (read only, set by layout)
 //---------------------------------------------------------
 
-class Clef : public Element {
-      Q_GADGET
-      Q_PROPERTY(bool showCourtesy READ showCourtesy WRITE undoSetShowCourtesy)
-      Q_PROPERTY(bool small READ small)
-
+class Clef final : public Element {
       SymId symId;
       bool _showCourtesy;
       bool _small;
@@ -182,9 +178,9 @@ class Clef : public Element {
       void setClefType(const ClefTypeList& ctl) { _clefTypes = ctl; }
       virtual void spatiumChanged(qreal oldValue, qreal newValue) override;
 
-      QVariant getProperty(P_ID propertyId) const;
-      bool setProperty(P_ID propertyId, const QVariant&);
-      QVariant propertyDefault(P_ID id) const;
+      QVariant getProperty(Pid propertyId) const;
+      bool setProperty(Pid propertyId, const QVariant&);
+      QVariant propertyDefault(Pid id) const;
 
       virtual Element* nextSegmentElement() override;
       virtual Element* prevSegmentElement() override;

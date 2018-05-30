@@ -25,6 +25,7 @@ class Score;
 class Hairpin;
 
 enum class HairpinType : char {
+      INVALID = -1,
       CRESC_HAIRPIN,
       DECRESC_HAIRPIN,
       CRESC_LINE,
@@ -35,9 +36,7 @@ enum class HairpinType : char {
 //   @@ HairpinSegment
 //---------------------------------------------------------
 
-class HairpinSegment : public TextLineBaseSegment {
-      Q_GADGET
-
+class HairpinSegment final : public TextLineBaseSegment {
       bool    drawCircledTip;
       QPointF circledTip;
       qreal   circledTipRadius;
@@ -56,12 +55,9 @@ class HairpinSegment : public TextLineBaseSegment {
 
       Hairpin* hairpin() const                       { return (Hairpin*)spanner();          }
 
-      virtual QVariant getProperty(P_ID) const override;
-      virtual bool setProperty(P_ID, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
-      virtual PropertyFlags propertyFlags(P_ID) const override;
-      virtual StyleIdx getPropertyStyle(P_ID) const override;
-      virtual void resetProperty(P_ID id) override;
+      virtual QVariant getProperty(Pid) const override;
+      virtual bool setProperty(Pid, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       virtual void layout() override;
       virtual Shape shape() const override;
@@ -74,19 +70,14 @@ class HairpinSegment : public TextLineBaseSegment {
 //   @P veloChange   int
 //---------------------------------------------------------
 
-class Hairpin : public TextLineBase {
-      Q_GADGET
-
-      HairpinType _hairpinType;
+class Hairpin final : public TextLineBase {
+      HairpinType _hairpinType { HairpinType::INVALID };
       int _veloChange;
       bool  _hairpinCircledTip;
       Dynamic::Range _dynRange;
-      PropertyFlags lineWidthStyle;
 
       Spatium _hairpinHeight;
       Spatium _hairpinContHeight;
-      PropertyFlags hairpinHeightStyle;
-      PropertyFlags hairpinContHeightStyle;
 
    public:
       Hairpin(Score* s);
@@ -121,16 +112,11 @@ class Hairpin : public TextLineBase {
       virtual void write(XmlWriter&) const override;
       virtual void read(XmlReader&) override;
 
-      virtual QVariant getProperty(P_ID id) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID id) const override;
-      virtual PropertyFlags propertyFlags(P_ID id) const override;
-      virtual void resetProperty(P_ID id) override;
-      virtual StyleIdx getPropertyStyle(P_ID) const override;
+      virtual QVariant getProperty(Pid id) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid id) const override;
 
       virtual void setYoff(qreal) override;
-      virtual void styleChanged() override;
-      virtual void reset() override;
       virtual QString accessibleInfo() const override;
       };
 

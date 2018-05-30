@@ -25,8 +25,6 @@ class Note;
 //---------------------------------------------------------
 
 class TextLineSegment : public TextLineBaseSegment {
-      Q_GADGET
-
    protected:
 
    public:
@@ -35,11 +33,11 @@ class TextLineSegment : public TextLineBaseSegment {
       virtual TextLineSegment* clone() const override { return new TextLineSegment(*this); }
       TextLine* textLine() const                      { return (TextLine*)spanner(); }
       virtual void layout() override;
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
-      virtual PropertyStyle propertyStyle(P_ID) const override;
-      virtual void resetProperty(P_ID id) override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
+      virtual PropertyStyle propertyStyle(Pid) const override;
+      virtual void resetProperty(Pid id) override;
       virtual void styleChanged() override;
       };
 #endif
@@ -48,9 +46,7 @@ class TextLineSegment : public TextLineBaseSegment {
 //   @@ NoteLine
 //---------------------------------------------------------
 
-class NoteLine : public TextLineBase {
-      Q_GADGET
-
+class NoteLine final : public TextLineBase {
       Note* _startNote;
       Note* _endNote;
 
@@ -59,7 +55,7 @@ class NoteLine : public TextLineBase {
       NoteLine(const NoteLine&);
       ~NoteLine() {}
 
-      virtual NoteLine* clone() const           { return new NoteLine(*this); }
+      virtual NoteLine* clone() const         { return new NoteLine(*this); }
       virtual ElementType type() const        { return ElementType::NOTELINE; }
 
       void setStartNote(Note* n)  { _startNote = n; }

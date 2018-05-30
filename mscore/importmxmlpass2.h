@@ -20,6 +20,8 @@
 #ifndef __IMPORTMXMLPASS2_H__
 #define __IMPORTMXMLPASS2_H__
 
+#include <array>
+
 #include "libmscore/score.h"
 #include "libmscore/tuplet.h"
 #include "importxmlfirstpass.h"
@@ -56,9 +58,9 @@ enum class MxmlStartStop : char {
 struct MusicXmlTupletDesc {
       MusicXmlTupletDesc();
       MxmlStartStop type;
-      Element::Placement placement;
-      Tuplet::BracketType bracket;
-      Tuplet::NumberType shownumber;
+      Placement placement;
+      TupletBracketType bracket;
+      TupletNumberType shownumber;
       };
 
 //---------------------------------------------------------
@@ -97,10 +99,18 @@ class FiguredBassItem;
 class Glissando;
 class Pedal;
 class Trill;
+class MxmlLogger;
+
+using SlurStack = std::array<SlurDesc, MAX_NUMBER_LEVEL>;
+using TrillStack = std::array<Trill*, MAX_NUMBER_LEVEL>;
+using BracketsStack = std::array<SLine*, MAX_BRACKETS>;
+using DashesStack = std::array<SLine*, MAX_DASHES>;
+using OttavasStack = std::array<SLine*, MAX_NUMBER_LEVEL>;
+using HairpinsStack = std::array<SLine*, MAX_NUMBER_LEVEL>;
 
 class MusicXMLParserPass2 {
 public:
-      MusicXMLParserPass2(Score* score, MusicXMLParserPass1& pass1);
+      MusicXMLParserPass2(Score* score, MusicXMLParserPass1& pass1, MxmlLogger* logger);
       void initPartState(const QString& partId);
       Score::FileError parse(QIODevice* device);
       Score::FileError parse();
@@ -134,20 +144,22 @@ public:
       void forward(Fraction& dura);
       void backup(Fraction& dura);
       void timeModification(Fraction& timeMod, TDuration& normalType);
-      void pitch(int& step, int& alter, int& oct, AccidentalType& accid);
-      void rest(int& step, int& octave);
-      void lyric(QMap<int, Lyrics*>& numbrdLyrics, QMap<int, Lyrics*>& defyLyrics,
-                 QList<Lyrics*>& unNumbrdLyrics, QSet<Lyrics*>& extLyrics);
+      //void pitch(int& step, int& alter, int& oct, AccidentalType& accid);
+      void lyric(const QString& partId, QMap<int, Lyrics*>& numbrdLyrics, QSet<Lyrics*>& extLyrics);
+      void slur(ChordRest* cr, const int tick, const int track, bool& lastGraceAFter);
+      void tied(Note* note, const int track);
+      void articulations(ChordRest* cr, SymId& breath, QString& chordLineType);
+      void dynamics(QString& placement, QStringList& dynamics);
+      void ornaments(ChordRest* cr, QString& wavyLineType, int& wavyLineNo, QString& tremoloType, int& tremoloNr, bool& lastGraceAFter);
+      void technical(Note* note, ChordRest* cr);
+      void glissando(Note* note, const int tick, const int ticks, const int track);
       void notations(Note* note, ChordRest* cr, const int tick, MusicXmlTupletDesc& tupletDesc, bool& lastGraceAFter);
       void stem(Direction& sd, bool& nost);
       void fermata(ChordRest* cr);
       void tuplet(MusicXmlTupletDesc& tupletDesc);
       void doEnding(const QString& partId, Measure* measure, const QString& number, const QString& type, const QString& text);
-      QString getParseStatus() const { return _parseStatus; }
-      //QString getParseResult() const   { return parseResult; }
-      void logDebugTrace(const QString& info);
-      void logDebugInfo(const QString& info);
-      void logError(const QString& error);
+      void staffDetails(const QString& partId);
+      void staffTuning(StringData* t);
       void skipLogCurrElem();
 
       // part specific data interface functions
@@ -164,9 +176,9 @@ private:
 
       QXmlStreamReader _e;
       int _divs;                          // the current divisions value
-      QString _parseStatus;               // the parse status (typicallay a short error message)
       Score* const _score;                // the score
-      MusicXMLParserPass1& _pass1;  // the pass1 results
+      MusicXMLParserPass1& _pass1;        // the pass1 results
+      MxmlLogger* _logger;                ///< Error logger
 
       // part specific data (TODO: move to part-specific class)
 
@@ -175,15 +187,14 @@ private:
       // or use score->sigmap() ?
       Fraction _timeSigDura;
 
-      QVector<Tuplet*> _tuplets;                 ///< Current tuplet for each track in the current part
-      QVector<bool> _tuplImpls;                 ///< Current tuplet implicit flag for each track in the current part
-      SlurDesc _slur[MAX_NUMBER_LEVEL];
-      Trill* _trills[MAX_NUMBER_LEVEL];          ///< Current trills
-      SLine* _brackets[MAX_BRACKETS];
-      SLine* _dashes[MAX_DASHES];
-      SLine* _ottavas[MAX_NUMBER_LEVEL];        ///< Current ottavas
-      SLine* _hairpins[MAX_NUMBER_LEVEL];      ///< Current hairpins
-      // TODO SLine* trills[MAX_NUMBER_LEVEL];          ///< Current trills
+      QVector<Tuplet*> _tuplets;          ///< Current tuplet for each track in the current part
+      QVector<bool> _tuplImpls;           ///< Current tuplet implicit flag for each track in the current part
+      SlurStack _slurs { {} };
+      TrillStack _trills { {} };          ///< Current trills
+      BracketsStack _brackets { {} };
+      DashesStack _dashes { {} };
+      OttavasStack _ottavas { {} };       ///< Current ottavas
+      HairpinsStack _hairpins { {} };     ///< Current hairpins
 
       Glissando* _glissandi[MAX_NUMBER_LEVEL][2];   ///< Current slides ([0]) / glissandi ([1])
 
@@ -208,17 +219,15 @@ private:
 
 class MusicXMLParserDirection {
 public:
-      MusicXMLParserDirection(QXmlStreamReader& e, Score* score, const MusicXMLParserPass1& pass1, MusicXMLParserPass2& pass2);
+      MusicXMLParserDirection(QXmlStreamReader& e, Score* score, const MusicXMLParserPass1& pass1, MusicXMLParserPass2& pass2, MxmlLogger* logger);
       void direction(const QString& partId, Measure* measure, const int tick, MusicXmlSpannerMap& spanners);
-      void logError(const QString& error);
-      void logDebugInfo(const QString& info);
-      void skipLogCurrElem();
 
 private:
       QXmlStreamReader& _e;
       Score* const _score;                      // the score
       const MusicXMLParserPass1& _pass1;        // the pass1 results
       MusicXMLParserPass2& _pass2;              // the pass2 results
+      MxmlLogger* _logger;                      ///< Error logger
 
       QStringList _dynamicsList;
       QString _enclosure;
@@ -251,6 +260,7 @@ private:
       void sound();
       void dynamics();
       void handleRepeats(Measure* measure, const int track);
+      void skipLogCurrElem();
       };
 
 } // namespace Ms

@@ -21,6 +21,7 @@
 #include "config.h"
 #include "icons.h"
 #include "instrwidget.h"
+#include "stringutils.h"
 
 #include "libmscore/clef.h"
 #include "libmscore/instrtemplate.h"
@@ -54,9 +55,14 @@ void filterInstruments(QTreeWidget* instrumentList, const QString &searchPhrase)
             QTreeWidgetItem* ci = 0;
 
             for (int cidx = 0; (ci = item->child(cidx)); ++cidx) {
-                  // replace the unicode b (accidential) so a search phrase of "bb" would give Bb Trumpet...
+                  // replace the unicode b (accidental) so a search phrase of "bb" would give Bb Trumpet...
                   QString text = ci->text(0).replace(QChar(0x266d), QChar('b'));
-                  bool isMatch = text.contains(searchPhrase, Qt::CaseInsensitive);
+
+                  // remove ligatures and diacritics
+                  QString removedSpecialChar = stringutils::removeLigatures(text);
+                  removedSpecialChar = stringutils::removeDiacritics(removedSpecialChar);
+
+                  bool isMatch = text.contains(searchPhrase, Qt::CaseInsensitive) || removedSpecialChar.contains(searchPhrase, Qt::CaseInsensitive);
                   ci->setHidden(!isMatch);
 
                   if (isMatch)
@@ -422,7 +428,6 @@ void InstrumentsWidget::buildTemplateList()
       {
       // clear search if instrument list is updated
       search->clear();
-      filterInstruments(instrumentList, search->text());
 
       populateInstrumentList(instrumentList);
       populateGenreCombo(instrumentGenreFilter);
@@ -457,10 +462,11 @@ void InstrumentsWidget::genPartList(Score* cs)
                   sli->setClefType(s->clefType(0));
                   sli->setDefaultClefType(s->defaultClefType());
                   sli->setPartIdx(s->rstaff());
-                  const LinkedStaves* ls = s->linkedStaves();
+                  const LinkedElements* ls = s->links();
                   bool bLinked = false;
                   if (ls && !ls->empty()) {
-                        foreach(Staff* ps, ls->staves()) {
+                        for (auto le : *ls) {
+                              Staff* ps = toStaff(le);
                               if (ps != s && ps->score() == s->score()) {
                                     bLinked = true;
                                     break;
@@ -875,25 +881,12 @@ void InstrumentsWidget::on_linkedButton_clicked()
 
 void InstrumentsWidget::on_search_textChanged(const QString &searchPhrase)
       {
-      if (searchPhrase.isEmpty())
-            return;
-
-      filterInstruments(instrumentList, searchPhrase);
       instrumentGenreFilter->blockSignals(true);
       instrumentGenreFilter->setCurrentIndex(0);
       instrumentGenreFilter->blockSignals(false);
+      filterInstruments(instrumentList, searchPhrase);
       }
 
-//---------------------------------------------------------
-//   on_clearSearch_clicked
-//---------------------------------------------------------
-
-void InstrumentsWidget::on_clearSearch_clicked()
-      {
-      search->clear();
-      QString genre = instrumentGenreFilter->currentData().toString();
-      filterInstrumentsByGenre(instrumentList, genre);
-      }
 
 //---------------------------------------------------------
 //   on_instrumentGenreFilter_currentTextChanged

@@ -447,13 +447,13 @@ void FiguredBassItem::layout()
       {
       qreal             h, w, x, x1, x2, y;
 
-      // contruct font metrics
+      // construct font metrics
       int   fontIdx = 0;
       QFont f(g_FBFonts.at(fontIdx).family);
 
       // font size in pixels, scaled according to spatium()
       // (use the same font selection as used in draw() below)
-      qreal m = score()->styleD(StyleIdx::figuredBassFontSize) * spatium() / SPATIUM20;
+      qreal m = score()->styleD(Sid::figuredBassFontSize) * spatium() / SPATIUM20;
       f.setPointSizeF(m);
       QFontMetricsF fm(f, MScore::paintDevice());
 
@@ -463,7 +463,7 @@ void FiguredBassItem::layout()
 
       // create display text
       int font = 0;
-      int style = score()->styleI(StyleIdx::figuredBassStyle);
+      int style = score()->styleI(Sid::figuredBassStyle);
 
       if (parenth[0] != Parenthesis::NONE)
             str.append(g_FBFonts.at(font).displayParenthesis[int(parenth[0])]);
@@ -530,8 +530,8 @@ void FiguredBassItem::layout()
             x = 0;                        // start at note left margin
       // vertical position
       h = fm.lineSpacing();
-      h *= score()->styleD(StyleIdx::figuredBassLineHeight);
-      if (score()->styleI(StyleIdx::figuredBassAlignment) == 0)          // top alignment: stack down from first item
+      h *= score()->styleD(Sid::figuredBassLineHeight);
+      if (score()->styleI(Sid::figuredBassAlignment) == 0)          // top alignment: stack down from first item
             y = h * ord;
       else                                                        // bottom alignment: stack up from last item
             y = -h * (figuredBass()->numOfItems() - ord);
@@ -561,7 +561,7 @@ void FiguredBassItem::draw(QPainter* painter) const
       f.setHintingPreference(QFont::PreferVerticalHinting);
 #endif
       // (use the same font selection as used in layout() above)
-      qreal m = score()->styleD(StyleIdx::figuredBassFontSize) * spatium() / SPATIUM20;
+      qreal m = score()->styleD(Sid::figuredBassFontSize) * spatium() / SPATIUM20;
       f.setPointSizeF(m * MScore::pixelRatio);
 
       painter->setFont(f);
@@ -616,76 +616,76 @@ void FiguredBassItem::draw(QPainter* painter) const
 //   PROPERTY METHODS
 //---------------------------------------------------------
 
-QVariant FiguredBassItem::getProperty(P_ID propertyId) const
+QVariant FiguredBassItem::getProperty(Pid propertyId) const
       {
       switch(propertyId) {
-            case P_ID::FBPREFIX:
+            case Pid::FBPREFIX:
                   return int(_prefix);
-            case P_ID::FBDIGIT:
+            case Pid::FBDIGIT:
                   return _digit;
-            case P_ID::FBSUFFIX:
+            case Pid::FBSUFFIX:
                   return int(_suffix);
-            case P_ID::FBCONTINUATIONLINE:
+            case Pid::FBCONTINUATIONLINE:
                   return int(_contLine);
-            case P_ID::FBPARENTHESIS1:
+            case Pid::FBPARENTHESIS1:
                   return int(parenth[0]);
-            case P_ID::FBPARENTHESIS2:
+            case Pid::FBPARENTHESIS2:
                   return int(parenth[1]);
-            case P_ID::FBPARENTHESIS3:
+            case Pid::FBPARENTHESIS3:
                   return int(parenth[2]);
-            case P_ID::FBPARENTHESIS4:
+            case Pid::FBPARENTHESIS4:
                   return int(parenth[3]);
-            case P_ID::FBPARENTHESIS5:
+            case Pid::FBPARENTHESIS5:
                   return int(parenth[4]);
             default:
                   return Element::getProperty(propertyId);
             }
       }
 
-bool FiguredBassItem::setProperty(P_ID propertyId, const QVariant& v)
+bool FiguredBassItem::setProperty(Pid propertyId, const QVariant& v)
       {
       score()->addRefresh(canvasBoundingRect());
       int   val = v.toInt();
       switch(propertyId) {
-            case P_ID::FBPREFIX:
+            case Pid::FBPREFIX:
                   if(val < int(Modifier::NONE) || val >= int(Modifier::NUMOF))
                         return false;
                   _prefix = (Modifier)val;
                   break;
-            case P_ID::FBDIGIT:
+            case Pid::FBDIGIT:
                   if(val < 1 || val > 9)
                         return false;
                   _digit = val;
                   break;
-            case P_ID::FBSUFFIX:
+            case Pid::FBSUFFIX:
                   if(val < int(Modifier::NONE) || val >= int(Modifier::NUMOF))
                         return false;
                   _suffix = (Modifier)val;
                   break;
-            case P_ID::FBCONTINUATIONLINE:
+            case Pid::FBCONTINUATIONLINE:
                   _contLine = (ContLine)val;
                   break;
-            case P_ID::FBPARENTHESIS1:
+            case Pid::FBPARENTHESIS1:
                   if(val < int(Parenthesis::NONE) || val >= int(Parenthesis::NUMOF))
                         return false;
                   parenth[0] = (Parenthesis)val;
                   break;
-            case P_ID::FBPARENTHESIS2:
+            case Pid::FBPARENTHESIS2:
                   if(val < int(Parenthesis::NONE) || val >= int(Parenthesis::NUMOF))
                         return false;
                   parenth[1] = (Parenthesis)val;
                   break;
-            case P_ID::FBPARENTHESIS3:
+            case Pid::FBPARENTHESIS3:
                   if(val < int(Parenthesis::NONE) || val >= int(Parenthesis::NUMOF))
                         return false;
                   parenth[2] = (Parenthesis)val;
                   break;
-            case P_ID::FBPARENTHESIS4:
+            case Pid::FBPARENTHESIS4:
                   if(val < int(Parenthesis::NONE) || val >= int(Parenthesis::NUMOF))
                         return false;
                   parenth[3] = (Parenthesis)val;
                   break;
-            case P_ID::FBPARENTHESIS5:
+            case Pid::FBPARENTHESIS5:
                   if(val < int(Parenthesis::NONE) || val >= int(Parenthesis::NUMOF))
                         return false;
                   parenth[4] = (Parenthesis)val;
@@ -697,15 +697,15 @@ bool FiguredBassItem::setProperty(P_ID propertyId, const QVariant& v)
       return true;
       }
 
-QVariant FiguredBassItem::propertyDefault(P_ID id) const
+QVariant FiguredBassItem::propertyDefault(Pid id) const
       {
       switch(id) {
-            case P_ID::FBPREFIX:
-            case P_ID::FBSUFFIX:
+            case Pid::FBPREFIX:
+            case Pid::FBSUFFIX:
                   return int(Modifier::NONE);
-            case P_ID::FBDIGIT:
+            case Pid::FBDIGIT:
                   return FBIDigitNone;
-            case P_ID::FBCONTINUATIONLINE:
+            case Pid::FBCONTINUATIONLINE:
                   return false;
             default:
                   return Element::propertyDefault(id);
@@ -719,10 +719,10 @@ QVariant FiguredBassItem::propertyDefault(P_ID id) const
 void FiguredBassItem::undoSetPrefix(Modifier pref)
       {
       if(pref <= Modifier::CROSS) {
-            undoChangeProperty(P_ID::FBPREFIX, (int)pref);
+            undoChangeProperty(Pid::FBPREFIX, (int)pref);
             // if setting some prefix and there is a suffix already, clear suffix
             if(pref != Modifier::NONE && _suffix != Modifier::NONE)
-                  undoChangeProperty(P_ID::FBSUFFIX, int(Modifier::NONE));
+                  undoChangeProperty(Pid::FBSUFFIX, int(Modifier::NONE));
             layout();                     // re-generate displayText
             }
       }
@@ -730,49 +730,49 @@ void FiguredBassItem::undoSetPrefix(Modifier pref)
 void FiguredBassItem::undoSetDigit(int digit)
       {
       if (digit >= 0 && digit <= 9) {
-            undoChangeProperty(P_ID::FBDIGIT, digit);
+            undoChangeProperty(Pid::FBDIGIT, digit);
             layout();                     // re-generate displayText
             }
       }
 
 void FiguredBassItem::undoSetSuffix(Modifier suff)
       {
-      undoChangeProperty(P_ID::FBSUFFIX, int(suff));
+      undoChangeProperty(Pid::FBSUFFIX, int(suff));
       // if setting some suffix and there is a prefix already, clear prefix
       if(suff != Modifier::NONE && _prefix != Modifier::NONE)
-            undoChangeProperty(P_ID::FBPREFIX, int(Modifier::NONE));
+            undoChangeProperty(Pid::FBPREFIX, int(Modifier::NONE));
       layout();                     // re-generate displayText
       }
 
 void FiguredBassItem::undoSetContLine(ContLine val)
       {
-      undoChangeProperty(P_ID::FBCONTINUATIONLINE, int(val));
+      undoChangeProperty(Pid::FBCONTINUATIONLINE, int(val));
       layout();                     // re-generate displayText
       }
 
 void FiguredBassItem::undoSetParenth1(Parenthesis par)
       {
-      undoChangeProperty(P_ID::FBPARENTHESIS1, int(par));
+      undoChangeProperty(Pid::FBPARENTHESIS1, int(par));
       layout();                     // re-generate displayText
       }
 void FiguredBassItem::undoSetParenth2(Parenthesis par)
       {
-      undoChangeProperty(P_ID::FBPARENTHESIS2, int(par));
+      undoChangeProperty(Pid::FBPARENTHESIS2, int(par));
       layout();                     // re-generate displayText
       }
 void FiguredBassItem::undoSetParenth3(Parenthesis par)
       {
-      undoChangeProperty(P_ID::FBPARENTHESIS3, int(par));
+      undoChangeProperty(Pid::FBPARENTHESIS3, int(par));
       layout();                     // re-generate displayText
       }
 void FiguredBassItem::undoSetParenth4(Parenthesis par)
       {
-      undoChangeProperty(P_ID::FBPARENTHESIS4, int(par));
+      undoChangeProperty(Pid::FBPARENTHESIS4, int(par));
       layout();                     // re-generate displayText
       }
 void FiguredBassItem::undoSetParenth5(Parenthesis par)
       {
-      undoChangeProperty(P_ID::FBPARENTHESIS5, int(par));
+      undoChangeProperty(Pid::FBPARENTHESIS5, int(par));
       layout();                     // re-generate displayText
       }
 
@@ -956,19 +956,20 @@ bool FiguredBassItem::startsWithParenthesis() const
 //---------------------------------------------------------
 
 FiguredBass::FiguredBass(Score* s)
-   : Text(SubStyle::FIGURED_BASS, s)
+   : TextBase(s)
       {
+      initSubStyle(SubStyleId::FIGURED_BASS);
       setFlag(ElementFlag::ON_STAFF, true);
       setOnNote(true);
 #if 0  // TODO
       TextStyle st(
          g_FBFonts[0].family,
-         score()->styleD(StyleIdx::figuredBassFontSize),
+         score()->styleD(Sid::figuredBassFontSize),
          false,
          false,
          false,
          Align::LEFT | Align::TOP,
-         QPointF(0, score()->styleD(StyleIdx::figuredBassYOffset)),
+         QPointF(0, score()->styleD(Sid::figuredBassYOffset)),
          OffsetType::SPATIUM);
       st.setSizeIsSpatiumDependent(true);
       setSubStyle(st);
@@ -978,7 +979,7 @@ FiguredBass::FiguredBass(Score* s)
       }
 
 FiguredBass::FiguredBass(const FiguredBass& fb)
-   : Text(fb)
+   : TextBase(fb)
       {
       setOnNote(fb.onNote());
       setTicks(fb.ticks());
@@ -1011,7 +1012,7 @@ void FiguredBass::write(XmlWriter& xml) const
             xml.tag("ticks", ticks());
       // if unparseable items, write full text data
       if (items.size() < 1)
-            Text::writeProperties(xml, true);
+            TextBase::writeProperties(xml, true);
       else {
 //            if (textStyleType() != StyledPropertyListIdx::FIGURED_BASS)
 //                  // if all items parsed and not unstiled, we simply have a special style: write it
@@ -1050,7 +1051,7 @@ void FiguredBass::read(XmlReader& e)
                   }
 //            else if (tag == "style")
 //                  setStyledPropertyListIdx(e.readElementText());
-            else if (!Text::readProperties(e))
+            else if (!TextBase::readProperties(e))
                   e.unknown();
             }
       // if items could be parsed set normalized text
@@ -1064,12 +1065,12 @@ void FiguredBass::read(XmlReader& e)
 
 void FiguredBass::layout()
       {
-      qreal yOff  = score()->styleD(StyleIdx::figuredBassYOffset);
+      qreal yOff  = score()->styleD(Sid::figuredBassYOffset);
       qreal _sp   = spatium();
       // if 'our' style, force 'our' style data from FiguredBass parameters
 #if 0
       if (textStyleType() == StyledPropertyListIdx::FIGURED_BASS) {
-            TextStyle st(g_FBFonts[0].family, score()->styleD(StyleIdx::figuredBassFontSize),
+            TextStyle st(g_FBFonts[0].family, score()->styleD(Sid::figuredBassFontSize),
                         false, false, false, Align::LEFT | Align::TOP, QPointF(0, yOff),
                         OffsetType::SPATIUM);
             st.setSizeIsSpatiumDependent(true);
@@ -1079,8 +1080,8 @@ void FiguredBass::layout()
       // if in edit mode or if style has been changed,
       // do nothing else, keeping default laying out and formatting
 //      if (editMode() || items.size() < 1 || subStyle() != SubStyle::FIGURED_BASS) {
-      if (items.size() < 1 || subStyle() != SubStyle::FIGURED_BASS) {
-            Text::layout();
+      if (items.size() < 1 || subStyleId() != SubStyleId::FIGURED_BASS) {
+            TextBase::layout();
             return;
             }
 
@@ -1088,7 +1089,7 @@ void FiguredBass::layout()
       yOff *= _sp;                                    // convert spatium value to raster units
       setPos(QPointF(0.0, yOff));
 
-      // BOUNDING BOX and individual item layout (if requried)
+      // BOUNDING BOX and individual item layout (if required)
       createLayout();                                 // prepare structs and data expected by Text methods
       // if element could be parsed into items, layout each element
       if (items.size() > 0) {
@@ -1100,7 +1101,6 @@ void FiguredBass::layout()
                   addbbox(item->bbox().translated(item->pos()));
                   }
             }
-      adjustReadPos();
       }
 
 //---------------------------------------------------------
@@ -1206,11 +1206,12 @@ void FiguredBass::draw(QPainter* painter) const
             }
       // if in edit mode or with custom style, use standard text drawing
 //      if (editMode() || subStyle() != SubStyle::FIGURED_BASS)
-      if (subStyle() != SubStyle::FIGURED_BASS)
-            Text::draw(painter);
-      else {                                                // not edit mode:
+      if (subStyleId() != SubStyleId::FIGURED_BASS)
+            TextBase::draw(painter);
+      else
+            {                                                // not edit mode:
             if (items.size() < 1)                           // if not parseable into f.b. items
-                  Text::draw(painter);                      // draw as standard text
+                  TextBase::draw(painter);                      // draw as standard text
             else
                   for (FiguredBassItem* item : items) {     // if parseable into f.b. items
                         painter->translate(item->pos());    // draw each item in its proper position
@@ -1231,15 +1232,15 @@ void FiguredBass::draw(QPainter* painter) const
 
 void FiguredBass::startEdit(EditData& ed)
       {
-      Text::layout();               // convert layout to standard Text conventions
-      Text::startEdit(ed);
+      TextBase::layout();               // convert layout to standard Text conventions
+      TextBase::startEdit(ed);
       }
 
 void FiguredBass::endEdit(EditData& ed)
       {
       int idx;
 
-      Text::endEdit(ed);
+      TextBase::endEdit(ed);
       // as the standard text editor keeps inserting spurious HTML formatting and styles
       // retrieve and work only on the plain text
       QString txt = plainText();
@@ -1257,7 +1258,7 @@ void FiguredBass::endEdit(EditData& ed)
             FiguredBassItem* pItem = new FiguredBassItem(score(), idx++);
             if(!pItem->parse(str)) {            // if any item fails parsing
                   items.clear();                // clear item list
-                  Text::layout();               // keeping text as entered by user
+                  TextBase::layout();               // keeping text as entered by user
                   return;
                   }
             pItem->setTrack(track());
@@ -1321,7 +1322,7 @@ FiguredBass* FiguredBass::nextFiguredBass() const
       // scan segment annotations for an existing FB element in the this' staff
       for (Element* e : nextSegm->annotations())
             if (e->type() == ElementType::FIGURED_BASS && e->track() == track())
-                  return static_cast<FiguredBass*>(e);
+                  return toFiguredBass(e);
 
       return 0;
       }
@@ -1359,30 +1360,30 @@ qreal FiguredBass::additionalContLineX(qreal pagePosY) const
 //   PROPERTY METHODS
 //---------------------------------------------------------
 
-QVariant FiguredBass::getProperty(P_ID propertyId) const
+QVariant FiguredBass::getProperty(Pid propertyId) const
       {
       switch(propertyId) {
             default:
-                  return Text::getProperty(propertyId);
+                  return TextBase::getProperty(propertyId);
             }
       }
 
-bool FiguredBass::setProperty(P_ID propertyId, const QVariant& v)
+bool FiguredBass::setProperty(Pid propertyId, const QVariant& v)
       {
       score()->addRefresh(canvasBoundingRect());
       switch(propertyId) {
             default:
-                  return Text::setProperty(propertyId, v);
+                  return TextBase::setProperty(propertyId, v);
             }
       score()->setLayoutAll();
       return true;
       }
 
-QVariant FiguredBass::propertyDefault(P_ID id) const
+QVariant FiguredBass::propertyDefault(Pid id) const
       {
       switch(id) {
             default:
-                  return Text::propertyDefault(id);
+                  return TextBase::propertyDefault(id);
             }
       }
 
@@ -1424,7 +1425,7 @@ FiguredBass * FiguredBass::addFiguredBassToSegment(Segment * seg, int track, int
       for (Element* e : seg->annotations()) {
             if (e->type() == ElementType::FIGURED_BASS && (e->track() / VOICES) == staff) {
                   // an FB already exists in segment: re-use it
-                  fb = static_cast<FiguredBass*>(e);
+                  fb = toFiguredBass(e);
                   *pNew = false;
                   endTick = seg->tick() + fb->ticks();
                   break;
@@ -1467,7 +1468,7 @@ FiguredBass * FiguredBass::addFiguredBassToSegment(Segment * seg, int track, int
             for(prevSegm = seg->prev1(SegmentType::ChordRest); prevSegm; prevSegm = prevSegm->prev1(SegmentType::ChordRest)) {
                   for (Element* e : prevSegm->annotations()) {
                         if (e->type() == ElementType::FIGURED_BASS && (e->track() ) == track) {
-                              prevFB = static_cast<FiguredBass*>(e);   // previous FB found
+                              prevFB = toFiguredBass(e);   // previous FB found
                               break;
                               }
                         }
@@ -1565,7 +1566,7 @@ bool FiguredBassFont::read(XmlReader& e)
 //   Read Configuration File
 //
 //    reads a configuration and appends read data to g_FBFonts
-//    resets everythings and reads the built-in config file if fileName is null or empty
+//    resets everything and reads the built-in config file if fileName is null or empty
 //---------------------------------------------------------
 
 bool FiguredBass::readConfigFile(const QString& fileName)
@@ -1593,7 +1594,7 @@ bool FiguredBass::readConfigFile(const QString& fileName)
             qDebug("FiguredBass::read failed: <%s>", qPrintable(path));
             return false;
             }
-      XmlReader e(0, &f);
+      XmlReader e(&f);
       while (e.readNextStartElement()) {
             if (e.name() == "museScore") {
                   // QString version = e.attribute(QString("version"));
@@ -1748,7 +1749,7 @@ void FiguredBass::writeMusicXML(XmlWriter& xml, bool isOriginalFigure, int crEnd
 //
 // METHODS BELONGING TO OTHER CLASSES
 //
-//    Work In Progress: kept here until the FiguredBass framwork is reasonably set up;
+//    Work In Progress: kept here until the FiguredBass framework is reasonably set up;
 //    To be finally moved to their respective class implementation files.
 //
 //---------------------------------------------------------
@@ -1769,13 +1770,12 @@ FiguredBass* Score::addFiguredBass()
 
       FiguredBass * fb;
       bool bNew;
-      if (el->type() == ElementType::NOTE) {
-            ChordRest * cr = static_cast<Note*>(el)->chord();
-            fb = FiguredBass::addFiguredBassToSegment(cr->segment(),
-                        (cr->track() / VOICES) * VOICES, 0, &bNew);
+      if (el->isNote()) {
+            ChordRest * cr = toNote(el)->chord();
+            fb = FiguredBass::addFiguredBassToSegment(cr->segment(), cr->staffIdx() * VOICES, 0, &bNew);
             }
-      else if (el->type() == ElementType::FIGURED_BASS) {
-            fb = static_cast<FiguredBass*>(el);
+      else if (el->isFiguredBass()) {
+            fb = toFiguredBass(el);
             bNew = false;
             }
       else

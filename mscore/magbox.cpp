@@ -68,6 +68,7 @@ MagBox::MagBox(QWidget* parent)
       setToolTip(tr("Zoom"));
       setWhatsThis(tr("Zoom"));
       setValidator(new MagValidator(this));
+      setAutoCompletion(false);
 
       int i = 0;
       for (const MagEntry& e : magTable) {
@@ -81,7 +82,7 @@ MagBox::MagBox(QWidget* parent)
       addItem(QString("%1%").arg(freeMag * 100), int(MagIdx::MAG_FREE));
       setFocusPolicy(Qt::StrongFocus);
       setAccessibleName(tr("Zoom"));
-      setFixedHeight(preferences.iconHeight + 8);  // hack
+      setFixedHeight(preferences.getInt(PREF_UI_THEME_ICONHEIGHT) + 8);  // hack
       connect(this, SIGNAL(currentIndexChanged(int)), SLOT(indexChanged(int)));
       connect(lineEdit(), SIGNAL(returnPressed()), SLOT(textChanged()));
       }
@@ -140,8 +141,8 @@ double MagBox::getMag(ScoreView* canvas) const
       qreal pmag           = mscore->physicalDotsPerInch() / DPI;
       double cw            = canvas->width();
       double ch            = canvas->height();
-      qreal pw             = score->styleD(StyleIdx::pageWidth);
-      qreal ph             = score->styleD(StyleIdx::pageHeight);
+      qreal pw             = score->styleD(Sid::pageWidth);
+      qreal ph             = score->styleD(Sid::pageHeight);
       double nmag;
 
       switch (idx) {

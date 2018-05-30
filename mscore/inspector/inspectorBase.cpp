@@ -34,19 +34,11 @@ InspectorBase::InspectorBase(QWidget* parent)
    : QWidget(parent)
       {
       setAccessibleName(tr("Inspector"));
-      resetMapper  = new QSignalMapper(this);
-      valueMapper  = new QSignalMapper(this);
-      styleMapper  = new QSignalMapper(this);
-
       inspector = static_cast<Inspector*>(parent);
       _layout    = new QVBoxLayout(this);
       _layout->setSpacing(0);
       _layout->setContentsMargins(0, 10, 0, 0);
       _layout->addStretch(100);
-
-      connect(resetMapper, SIGNAL(mapped(int)), SLOT(resetClicked(int)));
-      connect(valueMapper, SIGNAL(mapped(int)), SLOT(valueChanged(int)));
-      connect(styleMapper, SIGNAL(mapped(int)), SLOT(setStyleClicked(int)));
       }
 
 //---------------------------------------------------------
@@ -137,7 +129,7 @@ void InspectorBase::setValue(const InspectorItem& ii, QVariant val)
       {
       QWidget* w = ii.w;
 
-      P_ID id  = ii.t;
+      Pid id  = ii.t;
 
       switch (propertyType(id)) {
             case P_TYPE::POINT_SP:
@@ -227,7 +219,7 @@ bool InspectorBase::isDefault(const InspectorItem& ii)
       for (int i = 0; i < ii.parent; ++i)
             e = e->parent();
 
-      P_ID id      = ii.t;
+      Pid id      = ii.t;
       QVariant val = e->getProperty(id);
       QVariant def = e->propertyDefault(id);
       return val == def;
@@ -239,7 +231,7 @@ bool InspectorBase::isDefault(const InspectorItem& ii)
 
 bool InspectorBase::compareValues(const InspectorItem& ii, QVariant a, QVariant b)
       {
-      P_ID id  = ii.t;
+      Pid id  = ii.t;
       P_TYPE t = propertyType(id);
       if (t == P_TYPE::SIZE) {
             QSizeF s1 = a.toSizeF();
@@ -275,7 +267,7 @@ bool InspectorBase::dirty() const
 void InspectorBase::setElement()
       {
       for (const InspectorItem& ii : iList) {
-            P_ID id    = ii.t;
+            Pid id    = ii.t;
             Element* e = inspector->element();
             for (int k = 0; k < ii.parent; ++k)
                   e = e->parent();
@@ -302,8 +294,7 @@ void InspectorBase::checkDifferentValues(const InspectorItem& ii)
       QColor c(preferences.isThemeDark() ? Qt::yellow : Qt::darkCyan);
 
       if (inspector->el()->size() > 1) {
-            P_ID id      = ii.t;
-//            P_TYPE pt    = propertyType(id);
+            Pid id      = ii.t;
             QVariant val = getValue(ii);
 
             for (Element* e : *inspector->el()) {
@@ -346,10 +337,15 @@ void InspectorBase::checkDifferentValues(const InspectorItem& ii)
 
 void InspectorBase::valueChanged(int idx, bool reset)
       {
-      const InspectorItem& ii = iList[idx];
-      P_ID id       = ii.t;
-      QVariant val2 = getValue(ii);
+      static bool recursion = false;
 
+      if (recursion)
+            return;
+      recursion = true;
+
+      const InspectorItem& ii = iList[idx];
+      Pid id       = ii.t;
+      QVariant val2 = getValue(ii);                   // get new value from UI
       Score* score  = inspector->element()->score();
 
       score->startCmd();
@@ -365,8 +361,13 @@ void InspectorBase::valueChanged(int idx, bool reset)
             else if (ps == PropertyFlags::STYLED)
                   ps = PropertyFlags::UNSTYLED;
             QVariant val1 = e->getProperty(id);
-            if (val1 != val2 || (reset && ps != PropertyFlags::NOSTYLE))
-                  e->undoChangeProperty(id, val2, ps);
+            if (reset) {
+                  val2 = e->propertyDefault(id);
+                  if (!val2.isValid())
+                        continue;
+                  setValue(ii, val2);           // set UI, this may call valueChanged()
+                  }
+            e->undoChangeProperty(id, val2, ps);
             }
       inspector->setInspectorEdit(true);
       checkDifferentValues(ii);
@@ -375,8 +376,9 @@ void InspectorBase::valueChanged(int idx, bool reset)
       postInit();
 
       // a subStyle change may change several other values:
-      if (id == P_ID::SUB_STYLE)
+      if (id == Pid::SUB_STYLE)
             setElement();
+      recursion = false;
       }
 
 //---------------------------------------------------------
@@ -385,22 +387,7 @@ void InspectorBase::valueChanged(int idx, bool reset)
 
 void InspectorBase::resetClicked(int i)
       {
-      Element* e   = inspector->element();
-      const InspectorItem& ii = iList[i];
-      P_ID id      = ii.t;
-      for (int i = 0; i < ii.parent; ++i)
-            e = e->parent();
-      QVariant def = e->propertyDefault(id);
-      if (!def.isValid())
-            return;
-
-      Score* s = e->score();
-      s->startCmd();
-      e->undoResetProperty(id);
-      inspector->setInspectorEdit(true);
-      s->endCmd();      // this may remove element
-      inspector->setInspectorEdit(false);
-      inspector->update(s);
+      valueChanged(i, true);
       }
 
 //---------------------------------------------------------
@@ -412,13 +399,13 @@ void InspectorBase::setStyleClicked(int i)
       Element* e   = inspector->element();
       const InspectorItem& ii = iList[i];
 
-      StyleIdx sidx = e->getPropertyStyle(ii.t);
-      if (sidx == StyleIdx::NOSTYLE)
+      Sid sidx = e->getPropertyStyle(ii.t);
+      if (sidx == Sid::NOSTYLE)
             return;
       e->score()->startCmd();
       QVariant val = getValue(ii);
       e->undoChangeProperty(ii.t, val, PropertyFlags::STYLED);
-      P_ID id      = ii.t;
+      Pid id      = ii.t;
       P_TYPE t     = propertyType(id);
       if (t == P_TYPE::SP_REAL)
             val = val.toDouble() / e->score()->spatium();
@@ -470,45 +457,45 @@ void InspectorBase::mapSignals(const std::vector<InspectorItem>& il, const std::
             QToolButton* resetButton = ii.r;
             if (resetButton) {
                   resetButton->setIcon(*icons[int(Icons::reset_ICON)]);
-                  connect(resetButton, SIGNAL(clicked()), resetMapper, SLOT(map()));
-
-                  resetMapper->setMapping(resetButton, i);
-                  StyleIdx sidx = inspector->element()->getPropertyStyle(ii.t);
-                  if (sidx != StyleIdx::NOSTYLE) {
+                  connect(resetButton, &QToolButton::clicked, [=] { resetClicked(i); });
+                  Sid sidx = inspector->element()->getPropertyStyle(ii.t);
+                  if (sidx != Sid::NOSTYLE) {
                         QMenu* menu = new QMenu(this);
                         resetButton->setMenu(menu);
                         resetButton->setPopupMode(QToolButton::MenuButtonPopup);
                         QAction* a = menu->addAction(tr("Set as style"));
-                        styleMapper->setMapping(a, i);
-                        connect(a, SIGNAL(triggered()), styleMapper, SLOT(map()));
+                        connect(a, &QAction::triggered, [=] { setStyleClicked(i); });
                         }
                   }
             QWidget* w = ii.w;
             if (!w)
                   continue;
-            valueMapper->setMapping(w, i);
             if (qobject_cast<QDoubleSpinBox*>(w))
-                  connect(w, SIGNAL(valueChanged(double)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<QDoubleSpinBox*>(w), QOverload<double>::of(&QDoubleSpinBox::valueChanged), [=] { valueChanged(i); });
             else if (qobject_cast<QSpinBox*>(w))
-                  connect(w, SIGNAL(valueChanged(int)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<QSpinBox*>(w), QOverload<int>::of(&QSpinBox::valueChanged), [=] { valueChanged(i); });
             else if (qobject_cast<QFontComboBox*>(w))
-                  connect(w, SIGNAL(currentFontChanged(const QFont&)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<QFontComboBox*>(w), QOverload<const QFont&>::of(&QFontComboBox::currentFontChanged), [=] { valueChanged(i); });
             else if (qobject_cast<QComboBox*>(w))
-                  connect(w, SIGNAL(currentIndexChanged(int)), valueMapper, SLOT(map()));
-            else if (qobject_cast<QCheckBox*>(w) || qobject_cast<QPushButton*>(w) || qobject_cast<QToolButton*>(w))
-                  connect(w, SIGNAL(toggled(bool)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<QComboBox*>(w), QOverload<int>::of(&QComboBox::currentIndexChanged), [=] { valueChanged(i); });
+            else if (qobject_cast<QCheckBox*>(w))
+                  connect(qobject_cast<QCheckBox*>(w), QOverload<bool>::of(&QCheckBox::toggled), [=] { valueChanged(i); });
+            else if (qobject_cast<QPushButton*>(w))
+                  connect(qobject_cast<QPushButton*>(w), QOverload<bool>::of(&QPushButton::toggled), [=] { valueChanged(i); });
+            else if (qobject_cast<QToolButton*>(w))
+                  connect(qobject_cast<QToolButton*>(w), QOverload<bool>::of(&QToolButton::toggled), [=] { valueChanged(i); });
             else if (qobject_cast<QLineEdit*>(w))
-                  connect(w, SIGNAL(textChanged(const QString&)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<QLineEdit*>(w), QOverload<const QString&>::of(&QLineEdit::textChanged), [=] { valueChanged(i); });
             else if (qobject_cast<Awl::ColorLabel*>(w))
-                  connect(w, SIGNAL(colorChanged(QColor)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<Awl::ColorLabel*>(w), QOverload<QColor>::of(&Awl::ColorLabel::colorChanged), [=] { valueChanged(i); });
             else if (qobject_cast<Ms::AlignSelect*>(w))
-                  connect(w, SIGNAL(alignChanged(Align)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<Ms::AlignSelect*>(w), QOverload<Align>::of(&Ms::AlignSelect::alignChanged), [=] { valueChanged(i); });
             else if (qobject_cast<Ms::OffsetSelect*>(w))
-                  connect(w, SIGNAL(offsetChanged(const QPointF&)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<Ms::OffsetSelect*>(w), QOverload<const QPointF&>::of(&Ms::OffsetSelect::offsetChanged), [=] { valueChanged(i); });
             else if (qobject_cast<Ms::ScaleSelect*>(w))
-                  connect(w, SIGNAL(scaleChanged(const QSizeF&)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<Ms::ScaleSelect*>(w), QOverload<const QSizeF&>::of(&Ms::ScaleSelect::scaleChanged), [=] { valueChanged(i); });
             else if (qobject_cast<Ms::SizeSelect*>(w))
-                  connect(w, SIGNAL(valueChanged(const QVariant&)), valueMapper, SLOT(map()));
+                  connect(qobject_cast<Ms::SizeSelect*>(w), QOverload<const QVariant&>::of(&Ms::SizeSelect::valueChanged), [=] { valueChanged(i); });
             else
                   qFatal("not supported widget %s", w->metaObject()->className());
             ++i;
@@ -559,9 +546,9 @@ void InspectorBase::resetToStyle()
       Score* score = inspector->element()->score();
       score->startCmd();
       for (Element* e : *inspector->el()) {     // TODO: ??
-            Text* text = toText(e);
+            TextBase* text = toTextBase(e);
             // Preserve <sym> tags
-            text->undoChangeProperty(P_ID::TEXT, text->plainText().toHtmlEscaped().replace("&lt;sym&gt;","<sym>").replace("&lt;/sym&gt;","</sym>"));
+            text->undoChangeProperty(Pid::TEXT, text->plainText().toHtmlEscaped().replace("&lt;sym&gt;","<sym>").replace("&lt;/sym&gt;","</sym>"));
             }
       score->endCmd();
       }

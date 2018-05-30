@@ -5,6 +5,7 @@
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
+      <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -56,8 +57,8 @@
         </VBox>
       <Measure number="1">
         <Clef>
-          <concertClefType>G</concertClefType>
-          <transposingClefType>G</transposingClefType>
+          <concertClefType>G8va</concertClefType>
+          <transposingClefType>G8va</transposingClefType>
           <lid>1</lid>
           </Clef>
         <KeySig>
@@ -83,8 +84,8 @@
           <lid>6</lid>
           </Dynamic>
         <Beam id="1">
-          <l1>20</l1>
-          <l2>16</l2>
+          <l1>8</l1>
+          <l2>5</l2>
           </Beam>
         <Tuplet id="1">
           <lid>9</lid>
@@ -92,7 +93,6 @@
           <actualNotes>3</actualNotes>
           <baseNote>eighth</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>3</text>
             </Number>
           </Tuplet>
@@ -161,7 +161,7 @@
       <currentLayer>0</currentLayer>
       <Division>480</Division>
       <Style>
-        <createMultiMeasureRests>1</createMultiMeasureRests>
+        <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
@@ -230,8 +230,8 @@
           </VBox>
         <Measure number="1">
           <Clef>
-            <concertClefType>G</concertClefType>
-            <transposingClefType>G</transposingClefType>
+            <concertClefType>G8va</concertClefType>
+            <transposingClefType>G8va</transposingClefType>
             <lid>1</lid>
             </Clef>
           <KeySig>
@@ -257,8 +257,8 @@
             <lid>6</lid>
             </Dynamic>
           <Beam id="2">
-            <l1>20</l1>
-            <l2>16</l2>
+            <l1>8</l1>
+            <l2>5</l2>
             </Beam>
           <Tuplet id="2">
             <lid>9</lid>
@@ -266,7 +266,6 @@
             <actualNotes>3</actualNotes>
             <baseNote>eighth</baseNote>
             <Number>
-              <style>Tuplet</style>
               <text>3</text>
               </Number>
             </Tuplet>
@@ -354,7 +353,6 @@
             <actualNotes>3</actualNotes>
             <baseNote>eighth</baseNote>
             <Number>
-              <style>Tuplet</style>
               <text>3</text>
               </Number>
             </Tuplet>

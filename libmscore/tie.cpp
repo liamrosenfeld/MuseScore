@@ -51,21 +51,21 @@ void TieSegment::draw(QPainter* painter) const
                   painter->setBrush(QBrush(pen.color()));
                   pen.setCapStyle(Qt::RoundCap);
                   pen.setJoinStyle(Qt::RoundJoin);
-                  pen.setWidthF(score()->styleP(StyleIdx::SlurEndWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurEndWidth));
                   break;
             case 1:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(StyleIdx::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
                   pen.setStyle(Qt::DotLine);
                   break;
             case 2:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(StyleIdx::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
                   pen.setStyle(Qt::DashLine);
                   break;
             case 3:
                   painter->setBrush(Qt::NoBrush);
-                  pen.setWidthF(score()->styleP(StyleIdx::SlurDottedWidth));
+                  pen.setWidthF(score()->styleP(Sid::SlurDottedWidth));
                   pen.setStyle(Qt::CustomDashLine);
                   QVector<qreal> dashes { 5.0, 5.0 };
                   pen.setDashPattern(dashes);
@@ -153,10 +153,9 @@ void TieSegment::editDrag(EditData& ed)
             //
             if ((g == Grip::START && isSingleBeginType()) || (g == Grip::END && isSingleEndType())) {
                   Spanner* spanner = tie();
-                  Note* note = static_cast<Note*>(ed.view->elementNear(ed.pos));
-                  if (note && note->isNote()
-                     && ((g == Grip::END && note->tick() > tie()->tick()) || (g == Grip::START && note->tick() < tie()->tick2()))
-                     ) {
+                  Element* e = ed.view->elementNear(ed.pos);
+                  Note* note = (e && e->isNote()) ? toNote(e) : nullptr;
+                  if (note && ((g == Grip::END && note->tick() > tie()->tick()) || (g == Grip::START && note->tick() < tie()->tick2()))) {
                         if (g == Grip::END) {
                               Tie* tie = toTie(spanner);
                               if (tie->startNote()->pitch() == note->pitch()
@@ -192,7 +191,7 @@ void TieSegment::editDrag(EditData& ed)
             setAutoAdjust(0.0, 0.0);
             setUserOff(userOff() + offset);
             }
-      undoChangeProperty(P_ID::AUTOPLACE, false);
+      undoChangeProperty(Pid::AUTOPLACE, false);
       }
 
 //---------------------------------------------------------
@@ -250,7 +249,7 @@ void TieSegment::computeBezier(QPointF p6o)
       QPointF p3(c1, -shoulderH);
       QPointF p4(c2, -shoulderH);
 
-      qreal w = score()->styleP(StyleIdx::SlurMidWidth) - score()->styleP(StyleIdx::SlurEndWidth);
+      qreal w = score()->styleP(Sid::SlurMidWidth) - score()->styleP(Sid::SlurEndWidth);
       QPointF th(0.0, w);    // thickness of slur
 
       QPointF p3o = p6o + t.map(ups(Grip::BEZIER1).off);
@@ -398,13 +397,6 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
             }
 
       setbbox(bbox);
-      if ((staffIdx() > 0) && score()->mscVersion() < 206 && !readPos().isNull()) {
-            QPointF staffOffset;
-            if (system() && track() >= 0)
-                  staffOffset = QPointF(0.0, system()->staff(staffIdx())->y());
-            setReadPos(readPos() + staffOffset);
-            }
-      adjustReadPos();
       }
 
 //---------------------------------------------------------
@@ -478,8 +470,6 @@ void Tie::slurPos(SlurPos* sp)
       // so keep these in sync
 
       sp->p1    = sc->pos() + sc->segment()->pos() + sc->measure()->pos();
-      Chord* ec = endNote()->chord();
-      sp->p2    = ec->pos() + ec->segment()->pos() + ec->measure()->pos();
 
       //------p1
       if ((sc->notes().size() > 1) || (sc->stem() && (sc->up() == _up))) {
@@ -499,6 +489,8 @@ void Tie::slurPos(SlurPos* sp)
             sp->system2 = sp->system1;
             return;
             }
+      Chord* ec = endNote()->chord();
+      sp->p2    = ec->pos() + ec->segment()->pos() + ec->measure()->pos();
       sp->system2 = ec->measure()->system();
 
       hw = endNote()->tabHeadWidth(stt);
@@ -635,7 +627,7 @@ void Tie::layoutFor(System* system)
       //
       if (startNote() == 0 || endNote() == 0) {
             if (startNote() == 0) {
-                  qDebug("Tie::layout(): no start note");
+                  qDebug("no start note");
                   return;
                   }
             Chord* c1 = startNote()->chord();
@@ -675,14 +667,14 @@ void Tie::layoutFor(System* system)
 
       fixupSegments(n);
       TieSegment* segment = segmentAt(0);
-      segment->setParent(system);
+      segment->setSystem(system); // Needed to populate System.spannerSegments
       segment->layoutSegment(sPos.p1, sPos.p2);
       segment->setSpannerSegmentType(sPos.system1 != sPos.system2 ? SpannerSegmentType::BEGIN : SpannerSegmentType::SINGLE);
       }
 
 //---------------------------------------------------------
 //   layoutBack
-//    layout the second SpannerSegment of a splitted slur
+//    layout the second SpannerSegment of a split slur
 //---------------------------------------------------------
 
 void Tie::layoutBack(System* system)
@@ -692,7 +684,7 @@ void Tie::layoutBack(System* system)
 
       fixupSegments(2);
       TieSegment* segment = segmentAt(1);
-      segment->setParent(system);
+      segment->setSystem(system);
 
       qreal x;
       Segment* seg = endNote()->chord()->segment()->prev();
@@ -760,7 +752,7 @@ void Tie::setStartNote(Note* note)
 Note* Tie::startNote() const
       {
       Q_ASSERT(!startElement() || startElement()->type() == ElementType::NOTE);
-      return static_cast<Note*>(startElement());
+      return toNote(startElement());
       }
 
 //---------------------------------------------------------
@@ -769,8 +761,7 @@ Note* Tie::startNote() const
 
 Note* Tie::endNote() const
       {
-      Q_ASSERT(!endElement() || endElement()->type() == ElementType::NOTE);
-      return static_cast<Note*>(endElement());
+      return toNote(endElement());
       }
 
 //---------------------------------------------------------

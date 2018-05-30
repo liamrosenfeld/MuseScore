@@ -54,9 +54,7 @@ struct BarLineTableItem {
 //   @P barLineType  enum  (BarLineType.NORMAL, .DOUBLE, .START_REPEAT, .END_REPEAT, .BROKEN, .END, .DOTTED)
 //---------------------------------------------------------
 
-class BarLine : public Element {
-      Q_GADGET
-
+class BarLine final : public Element {
       int _spanStaff          { 0 };       // span barline to next staff if true, values > 1 are used for importing from 2.x
       char _spanFrom          { 0 };       // line number on start and end staves
       char _spanTo            { 0 };
@@ -79,7 +77,7 @@ class BarLine : public Element {
       BarLine &operator=(const BarLine&) = delete;
 
       virtual BarLine* clone() const override     { return new BarLine(*this); }
-      virtual ElementType type() const override { return ElementType::BAR_LINE; }
+      virtual ElementType type() const override   { return ElementType::BAR_LINE; }
       virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
       virtual void draw(QPainter*) const override;
@@ -126,9 +124,11 @@ class BarLine : public Element {
       virtual int subtype() const override         { return int(_barLineType); }
       virtual QString subtypeName() const override { return qApp->translate("barline", barLineTypeName().toUtf8()); }
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID propertyId) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid propertyId) const override;
+      virtual void undoChangeProperty(Pid id, const QVariant&, PropertyFlags ps);
+      using ScoreElement::undoChangeProperty;
 
       static qreal layoutWidth(Score*, BarLineType);
 
@@ -141,8 +141,6 @@ class BarLine : public Element {
       static const std::vector<BarLineTableItem> barLineTable;
       };
 }     // namespace Ms
-
-// Q_DECLARE_METATYPE(Ms::MSQE_BarLineType::E);
 
 #endif
 

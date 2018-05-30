@@ -65,6 +65,7 @@
 #include "libmscore/pitchspelling.h"
 #include "libmscore/chordlist.h"
 #include "libmscore/bracket.h"
+#include "libmscore/bracketItem.h"
 #include "libmscore/trill.h"
 #include "libmscore/timesig.h"
 #include "libmscore/systemdivider.h"
@@ -123,6 +124,9 @@ void ElementItem::init()
                   no.setNum(((Measure*)el)->no()+1);
                   s = "Measure-" + no;
                   }
+                  break;
+            case ElementType::SEGMENT:
+                  s = QString("Segment %1").arg(toSegment(el)->subTypeName());
                   break;
             default:
                   s = el->name();
@@ -484,7 +488,7 @@ void Debugger::updateList(Score* s)
                         if (mb->type() != ElementType::MEASURE)
                               continue;
                         Measure* measure = (Measure*) mb;
-                        if (cs->styleB(StyleIdx::concertPitch)) {
+                        if (cs->styleB(Sid::concertPitch)) {
                               if (measure->mmRest()) {
                                     ElementItem* mmi = new ElementItem(mi, measure->mmRest());
                                     addMeasure(mmi, measure->mmRest());
@@ -585,7 +589,7 @@ void Debugger::itemClicked(QTreeWidgetItem* i, int)
 
 void Debugger::updateElement(Element* el)
       {
-      if (el == 0 || !isVisible())
+      if (el == 0 || !isVisible() || !el->score())
             return;
 
       if (cs != el->score())
@@ -631,6 +635,8 @@ void Debugger::updateElement(Element* el)
                   case ElementType::VOLTA:            ew = new VoltaView;           break;
                   case ElementType::VOLTA_SEGMENT:    ew = new VoltaSegmentView;    break;
                   case ElementType::PEDAL:
+                  case ElementType::LET_RING:
+                  case ElementType::VIBRATO:
                   case ElementType::TEXTLINE:         ew = new TextLineView;        break;
                   case ElementType::PEDAL_SEGMENT:
                   case ElementType::TEXTLINE_SEGMENT: ew = new TextLineSegmentView; break;
@@ -638,6 +644,7 @@ void Debugger::updateElement(Element* el)
                   case ElementType::BEAM:             ew = new BeamView;            break;
                   case ElementType::TREMOLO:          ew = new TremoloView;         break;
                   case ElementType::OTTAVA:           ew = new OttavaView;          break;
+                  case ElementType::LET_RING_SEGMENT:
                   case ElementType::OTTAVA_SEGMENT:   ew = new TextLineSegmentView; break;
                   case ElementType::SLUR_SEGMENT:     ew = new SlurSegmentView;     break;
                   case ElementType::TIE_SEGMENT:      ew = new TieSegmentView;     break;
@@ -663,8 +670,12 @@ void Debugger::updateElement(Element* el)
                         ew = new HarmonyView;
                         break;
                   case ElementType::TRILL_SEGMENT:
+                  case ElementType::VIBRATO_SEGMENT:
                   case ElementType::HAIRPIN_SEGMENT:
-                        ew = new LineSegmentView; break;
+                        ew = new LineSegmentView;
+                        break;
+                  case ElementType::BRACKET:
+                        ew = new BracketView;
                         break;
                   default:
                         ew = new ElementView;
@@ -848,8 +859,9 @@ void SegmentView::setElement(Element* e)
       int tick = s->tick();
       TimeSigMap* sm = s->score()->sigmap();
 
-      int bar, beat, ticks;
-      sm->tickValues(tick, &bar, &beat, &ticks);
+      int bar = -1, beat = -1, ticks = -1;
+      if (tick >= 0)
+            sm->tickValues(tick, &bar, &beat, &ticks);
       sb.bar->setValue(bar);
       sb.beat->setValue(beat);
       sb.ticks->setValue(ticks);
@@ -1257,14 +1269,6 @@ void RestView::setElement(Element* e)
       crb.duration->setText(rest->duration().print());
       crb.move->setValue(rest->staffMove());
 
-      crb.attributes->clear();
-      for (Articulation* a : rest->articulations()) {
-            QString s;
-            s.setNum(qptrdiff(a), 16);
-            QListWidgetItem* item = new QListWidgetItem(s);
-            item->setData(Qt::UserRole, QVariant::fromValue<void*>((void*)a));
-            crb.attributes->addItem(item);
-            }
       crb.lyrics->clear();
       for (Lyrics* lyrics : rest->lyrics()) {
             QString s;
@@ -1276,7 +1280,7 @@ void RestView::setElement(Element* e)
 
       rb.sym->setValue(int(rest->sym()));
       rb.dotline->setValue(rest->getDotline());
-      rb.mmWidth->setValue(rest->mmWidth());
+      rb.mmWidth->setValue((rest->measure() && rest->measure()->isMMRest()) ? rest->mmWidth() : 0.0);
       rb.gap->setChecked(rest->isGap());
       }
 
@@ -1363,7 +1367,7 @@ void TextView::setElement(Element* e)
       {
       Text* te = static_cast<Text*>(e);
 
-      tb.subStyle->setText(subStyleName(te->subStyle()));
+      tb.subStyle->setText(subStyleName(te->subStyleId()));
 
       ShowElementBase::setElement(e);
       tb.text->setPlainText(te->xmlText());
@@ -1371,6 +1375,25 @@ void TextView::setElement(Element* e)
       tb.yoffset->setValue(te->offset().y());
       tb.offsetType->setCurrentIndex(int(te->offsetType()));
       tb.layoutToParentWidth->setChecked(te->layoutToParentWidth());
+      Align a = te->align();
+      const char* h;
+      if (a & Align::HCENTER)
+            h = "center";
+      else if (a & Align::RIGHT)
+            h = "right";
+      else
+            h = "left";
+      tb.halign->setText(h);
+      const char* v;
+      if (a & Align::BOTTOM)
+            v = "bottom";
+      else if (a & Align::VCENTER)
+            v = "center";
+      else if (a & Align::BASELINE)
+            v = "baseline";
+      else
+            v = "top";
+      tb.valign->setText(v);
       }
 
 //---------------------------------------------------------
@@ -1391,21 +1414,20 @@ HarmonyView::HarmonyView()
 //   setElement
 //---------------------------------------------------------
 
-void HarmonyView::setElement(Element* /*e*/)
+void HarmonyView::setElement(Element* e)
       {
-#if 0
       Harmony* harmony = (Harmony*)e;
 
 //      tb.textStyle->clear();
 //      for (int i = 0; i < int(TextStyleType::TEXT_STYLES); ++i)
 //            tb.textStyle->addItem(e->score()->textStyle(TextStyleType(i)).name());
 
-      const TextStyle& ts = harmony->textStyle();
+//      const TextStyle& ts = harmony->textStyle();
       ShowElementBase::setElement(e);
       tb.text->setPlainText(harmony->xmlText());
-      tb.xoffset->setValue(ts.offset().x());
-      tb.yoffset->setValue(ts.offset().y());
-      tb.offsetType->setCurrentIndex(int(ts.offsetType()));
+//      tb.xoffset->setValue(ts.offset().x());
+//      tb.yoffset->setValue(ts.offset().y());
+//      tb.offsetType->setCurrentIndex(int(ts.offsetType()));
 //TODO      tb.textStyle->setCurrentIndex(ts.textStyleType());
       tb.layoutToParentWidth->setChecked(harmony->layoutToParentWidth());
 
@@ -1447,7 +1469,6 @@ void HarmonyView::setElement(Element* /*e*/)
             hb.degreeTab->setItem(i, 1, new QTableWidgetItem(QVariant(d.value()).toString()));
             hb.degreeTab->setItem(i, 2, new QTableWidgetItem(QVariant(d.alter()).toString()));
             }
-#endif
       }
 
 void HarmonyView::on_leftParen_clicked(bool checked)
@@ -1714,6 +1735,7 @@ QSize DoubleLabel::sizeHint() const
 ShowElementBase::ShowElementBase()
    : QWidget()
       {
+      el = 0;
       layout = new QVBoxLayout;
       setLayout(layout);
       layout->addStretch(2000);
@@ -1788,8 +1810,6 @@ void ShowElementBase::setElement(Element* e)
       eb.cposy->setValue(e->pagePos().y());
       eb.offsetx->setValue(e->userOff().x());
       eb.offsety->setValue(e->userOff().y());
-      eb.readPosX->setValue(e->readPos().x());
-      eb.readPosY->setValue(e->readPos().y());
       eb.autoplace->setChecked(e->autoplace());
       eb.placement->setCurrentIndex(int(e->placement()));
 
@@ -2032,7 +2052,7 @@ void VoltaView::setElement(Element* e)
       Volta* volta = (Volta*)e;
       ShowElementBase::setElement(e);
 
-      tlb.lineWidth->setValue(volta->lineWidth().val());
+      tlb.lineWidth->setValue(volta->lineWidth());
 //      lb.anchor->setCurrentIndex(int(volta->anchor()));
       lb.diagonal->setChecked(volta->diagonal());
 //      lb.leftElement->setText(QString("%1").arg((unsigned long)volta->startElement(), 8, 16));
@@ -2496,6 +2516,7 @@ void ArticulationView::setElement(Element* e)
       articulation.up->setChecked(a->up());
       articulation.anchor->setCurrentIndex(int(a->anchor()));
       articulation.channelName->setText(a->channelName());
+      articulation.symName->setText(Sym::id2name(a->symId()));
       }
 
 //---------------------------------------------------------
@@ -2603,7 +2624,7 @@ void TextLineView::setElement(Element* e)
       Volta* volta = (Volta*)e;
       SpannerView::setElement(e);
 
-      tlb.lineWidth->setValue(volta->lineWidth().val());
+      tlb.lineWidth->setValue(volta->lineWidth());
       lb.diagonal->setChecked(volta->diagonal());
 
 //      tlb.beginText->setEnabled(volta->beginTextElement());
@@ -2731,6 +2752,30 @@ void SystemView::measureClicked(QListWidgetItem* i)
       {
       ElementListWidgetItem* item = (ElementListWidgetItem*)i;
       emit elementChanged(item->element());
+      }
+
+//---------------------------------------------------------
+//   BracketView
+//---------------------------------------------------------
+
+BracketView::BracketView()
+   : ShowElementBase()
+      {
+      br.setupUi(addWidget());
+      }
+
+void BracketView::setElement(Element* e)
+      {
+      ShowElementBase::setElement(e);
+      Bracket* b = toBracket(element());
+
+      br.braceSymbol->setValue(int(b->braceSymbol()));
+      br.type->setValue(int(b->bracketType()));
+      br.firstStaff->setValue(b->firstStaff());
+      br.lastStaff->setValue(b->lastStaff());
+      br.column->setValue(b->column());
+      br.span->setValue(b->span());
+      br.magx->setValue(int(b->magx()));
       }
 
 }

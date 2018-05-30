@@ -2661,14 +2661,14 @@ const std::array<const char*, int(SymId::lastSym)+1> Sym::symNames = { {
 
 //    MuseScore local symbols, precomposed symbols to mimic some emmentaler glyphs
 
-      "ornamentPrallMordent",
-      "ornamentUpPrall",
-      "ornamentUpMordent",
-      "ornamentPrallDown",
-      "ornamentDownPrall",
-      "ornamentDownMordent",
-      "ornamentPrallUp",
-      "ornamentLinePrall",
+      "ornamentPrallMordent",       // ornamentPrecompTrillWithMordent ?
+      "ornamentUpPrall",            // ornamentPrecompSlideTrillDAnglebert ?
+      "ornamentUpMordent",          // ornamentPrecompSlideTrillBach ?
+      "ornamentPrallDown",          // ornamentPrecompTrillLowerSuffix ?
+//      "ornamentDownPrall",        // -> SymId::ornamentPrecompMordentUpperPrefix },
+      "ornamentDownMordent",        // ornamentPrecompTurnTrillBach ?
+      "ornamentPrallUp",            // ornamentPrecompTrillSuffixDandrieu ?
+      "ornamentLinePrall",          // ornamentPRecompAppoggTrill ?
 
 //    additional symbols
 
@@ -5329,6 +5329,7 @@ struct oldName {
 
 QHash<QString, SymId> Sym::lonhash;
 QVector<oldName> oldNames = {
+//      {"ornamentDownPrall",                     SymId::ornamentPrecompMordentUpperPrefix },
       {"clef eight",                            SymId::clef8},
       //{"clef one"                             SymId::},
       //{"clef five"                            SymId::},
@@ -5376,7 +5377,7 @@ QVector<oldName> oldNames = {
       {"right parenthesis",                     SymId::noteheadParenthesisRight },  // accidentals.rightparen SMULF parenth. for noteheads used instead
       {"left parenthesis",                      SymId::noteheadParenthesisLeft },   // accidentals.leftparen
 
-      {"arrowheads.open.01",                    SymId::arrowheadWhiteRight }, // arrowheads.open.01 imilar, not identical in SMuFL
+      {"arrowheads.open.01",                    SymId::arrowheadWhiteRight }, // arrowheads.open.01 similar, not identical in SMuFL
       {"arrowheads.open.0M1",                   SymId::arrowheadWhiteLeft },  // arrowheads.open.0M1
       {"arrowheads.open.11",                    SymId::arrowheadWhiteUp },    // arrowheads.open.11
       {"arrowheads.open.1M1",                   SymId::arrowheadWhiteDown },  // arrowheads.open.1M1
@@ -5496,14 +5497,16 @@ QVector<oldName> oldNames = {
       {"prall",                                 SymId::ornamentMordent },           // scripts.prall
       {"mordent",                               SymId::ornamentMordentInverted },   // scripts.mordent
       {"prall prall",                           SymId::ornamentTremblement },       // scripts.prallprall
+
       {"prall mordent",                         SymId::ornamentPrallMordent },      // scripts.prallmordent
       {"up prall",                              SymId::ornamentUpPrall },           // scripts.upprall
       {"up mordent",                            SymId::ornamentUpMordent },         // scripts.upmordent
       {"prall down",                            SymId::ornamentPrallDown },         // scripts.pralldown
-      {"down prall",                            SymId::ornamentDownPrall },         // scripts.downprall
+//      {"down prall",                            SymId::ornamentDownPrall },         // scripts.downprall
       {"down mordent",                          SymId::ornamentDownMordent },       // scripts.downmordent
       {"prall up",                              SymId::ornamentPrallUp },           // scripts.prallup
       {"line prall",                            SymId::ornamentLinePrall },         // scripts.lineprall
+
       {"schleifer",                             SymId::ornamentPrecompSlide },      // scripts.schleifer
       {"caesura straight",                      SymId::caesura },                   // scripts.caesura.straight
       {"caesura curved",                        SymId::caesuraCurved },             // scripts.caesura.curved
@@ -5591,7 +5594,7 @@ SymId Sym::userName2id(const QString& s)
       {
       int idx = 0;
       for (const char* a : symUserNames) {
-            if (strcmp(a, qPrintable(s)) == 0)
+            if (a && strcmp(a, qPrintable(s)) == 0)
                   return SymId(idx);
             }
       return SymId::noSym;
@@ -5683,6 +5686,7 @@ void ScoreFont::draw(SymId id, QPainter* painter, const QSizeF& mag, const QPoin
 
       GlyphKey gk(face, id, mag.width(), mag.height(), worldScale, color);
       GlyphPixmap* pm = cache->object(gk);
+
       if (!pm) {
             FT_Matrix matrix {
                   scale16X, 0,
@@ -5741,7 +5745,7 @@ void ScoreFont::draw(const std::vector<SymId>& ids, QPainter* p, qreal mag, cons
       QPointF pos(_pos);
       for (SymId id : ids) {
             draw(id, p, mag, pos, scale);
-            pos.rx() += (sym(id).advance() * mag);
+            pos.rx() += advance(id, mag);
             }
       }
 
@@ -5943,29 +5947,29 @@ void ScoreFont::load()
                   }
             }
       oo = metadataJson.value("engravingDefaults").toObject();
-      static std::list<std::pair<QString, StyleIdx>> engravingDefaultsMapping = {
-            { "staffLineThickness",            StyleIdx::staffLineWidth },
-            { "stemThickness",                 StyleIdx::stemWidth },
-            { "beamThickness",                 StyleIdx::beamWidth },
-            { "beamSpacing",                   StyleIdx::beamDistance },
-            { "legerLineThickness",            StyleIdx::ledgerLineWidth },
-            { "legerLineExtension",            StyleIdx::ledgerLineLength },
-            { "slurEndpointThickness",         StyleIdx::SlurEndWidth },
-            { "slurMidpointThickness",         StyleIdx::SlurMidWidth },
-            { "thinBarlineThickness",          StyleIdx::barWidth },
-            { "thinBarlineThickness",          StyleIdx::doubleBarWidth },
-            { "thickBarlineThickness",         StyleIdx::endBarWidth },
-            { "dashedBarlineThickness",        StyleIdx::barWidth },
-            { "barlineSeparation",             StyleIdx::doubleBarDistance },
-            { "barlineSeparation",             StyleIdx::endBarDistance },
-            { "repeatBarlineDotSeparation",    StyleIdx::repeatBarlineDotSeparation },
-            { "bracketThickness",              StyleIdx::bracketWidth },
-            { "hairpinThickness",              StyleIdx::hairpinLineWidth },
-            { "octaveLineThickness",           StyleIdx::ottavaLineWidth },
-            { "pedalLineThickness",            StyleIdx::pedalLineWidth },
-            { "repeatEndingLineThickness",     StyleIdx::voltaLineWidth },
-            { "lyricLineThickness",            StyleIdx::lyricsLineThickness },
-            { "tupletBracketThickness",        StyleIdx::tupletBracketWidth }
+      static std::list<std::pair<QString, Sid>> engravingDefaultsMapping = {
+            { "staffLineThickness",            Sid::staffLineWidth },
+            { "stemThickness",                 Sid::stemWidth },
+            { "beamThickness",                 Sid::beamWidth },
+            { "beamSpacing",                   Sid::beamDistance },
+            { "legerLineThickness",            Sid::ledgerLineWidth },
+            { "legerLineExtension",            Sid::ledgerLineLength },
+            { "slurEndpointThickness",         Sid::SlurEndWidth },
+            { "slurMidpointThickness",         Sid::SlurMidWidth },
+            { "thinBarlineThickness",          Sid::barWidth },
+            { "thinBarlineThickness",          Sid::doubleBarWidth },
+            { "thickBarlineThickness",         Sid::endBarWidth },
+            { "dashedBarlineThickness",        Sid::barWidth },
+            { "barlineSeparation",             Sid::doubleBarDistance },
+            { "barlineSeparation",             Sid::endBarDistance },
+            { "repeatBarlineDotSeparation",    Sid::repeatBarlineDotSeparation },
+            { "bracketThickness",              Sid::bracketWidth },
+            { "hairpinThickness",              Sid::hairpinLineWidth },
+            { "octaveLineThickness",           Sid::ottavaLineWidth },
+            { "pedalLineThickness",            Sid::pedalLineWidth },
+            { "repeatEndingLineThickness",     Sid::voltaLineWidth },
+            { "lyricLineThickness",            Sid::lyricsLineThickness },
+            { "tupletBracketThickness",        Sid::tupletBracketWidth }
             };
       for (auto i : oo.keys()) {
             for (auto mapping : engravingDefaultsMapping) {
@@ -5975,7 +5979,7 @@ void ScoreFont::load()
                         _textEnclosureThickness = oo.value(i).toDouble();
                   }
             }
-      _engravingDefaults.push_back(std::make_pair(StyleIdx::MusicalTextFont, QString("%1 Text").arg(_family)));
+      _engravingDefaults.push_back(std::make_pair(Sid::MusicalTextFont, QString("%1 Text").arg(_family)));
 
       // create missing composed glyphs
       struct Composed {
@@ -6012,6 +6016,7 @@ void ScoreFont::load()
                   SymId::ornamentZigZagLineNoRightEnd,
                   SymId::ornamentBottomRightConcaveStroke,
                   }},
+#if 0
             { SymId::ornamentDownPrall,
                   {
                   SymId::ornamentTopLeftConvexStroke,
@@ -6019,6 +6024,7 @@ void ScoreFont::load()
                   SymId::ornamentZigZagLineNoRightEnd,
                   SymId::ornamentZigZagLineWithRightEnd
                   }},
+#endif
             { SymId::ornamentDownMordent,
                   {
                   SymId::ornamentLeftVerticalStroke,

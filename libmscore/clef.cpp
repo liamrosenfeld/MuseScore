@@ -36,7 +36,8 @@ namespace Ms {
 const ClefInfo ClefInfo::clefTable[] = {
 // tag    xmlName    line oCh pOff|-lines for sharps---||---lines for flats--|  symbol                           | name                                   | valid in staff group
 { "G",    "G",         2,  0, 45, { 0, 3,-1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef,                    TR("Treble clef"),                       StaffGroup::STANDARD  },
-{ "G15mb","G",         2, -2, 59, { 0, 3,-1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef15mb,                TR("Treble clef 15mb"),                  StaffGroup::STANDARD  },
+// { "G15mb","G",         2, -2, 59, { 0, 3,-1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef15mb,                TR("Treble clef 15mb"),                  StaffGroup::STANDARD  },
+{ "G15mb","G",         2, -2, 31, { 0, 3,-1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef15mb,                TR("Treble clef 15mb"),                  StaffGroup::STANDARD  },
 { "G8vb", "G",         2, -1, 38, { 0, 3,-1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef8vb,                 TR("Treble clef 8vb"),                   StaffGroup::STANDARD  },
 { "G8va", "G",         2,  1, 52, { 0, 3,-1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef8va,                 TR("Treble clef 8va"),                   StaffGroup::STANDARD  },
 { "G15ma","G",         2,  2, 59, { 0, 3,-1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef15ma,                TR("Treble clef 15ma"),                  StaffGroup::STANDARD  },
@@ -115,7 +116,7 @@ qreal Clef::mag() const
       {
       qreal mag = staff() ? staff()->mag(tick()) : 1.0;
       if (_small)
-            mag *= score()->styleD(StyleIdx::smallClefMag);
+            mag *= score()->styleD(Sid::smallClefMag);
       return mag;
       }
 
@@ -147,6 +148,14 @@ void Clef::layout()
                         _clefTypes = staff()->clefType(0);
                   }
 
+            Measure* meas = clefSeg->measure();
+            if (meas && meas->system()) {
+                  auto ml = meas->system()->measures();
+                  bool found = (std::find(ml.begin(), ml.end(), meas) != ml.end());
+                  bool courtesy = (tick == meas->endTick() && (meas == meas->system()->lastMeasure() || !found));
+                  if (courtesy && (!showCourtesy() || !score()->styleB(Sid::genCourtesyClef) || meas->isFinalMeasureOfSection()))
+                        show = false;
+                  }
             // if clef not to show or not compatible with staff group
             if (!show) {
                   setbbox(QRectF());
@@ -420,18 +429,18 @@ void Clef::spatiumChanged(qreal oldValue, qreal newValue)
 
 void Clef::undoSetShowCourtesy(bool v)
       {
-      undoChangeProperty(P_ID::SHOW_COURTESY, v);
+      undoChangeProperty(Pid::SHOW_COURTESY, v);
       }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-QVariant Clef::getProperty(P_ID propertyId) const
+QVariant Clef::getProperty(Pid propertyId) const
       {
       switch(propertyId) {
-            case P_ID::SHOW_COURTESY: return showCourtesy();
-            case P_ID::SMALL:         return small();
+            case Pid::SHOW_COURTESY: return showCourtesy();
+            case Pid::SMALL:         return small();
             default:
                   return Element::getProperty(propertyId);
             }
@@ -441,14 +450,15 @@ QVariant Clef::getProperty(P_ID propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Clef::setProperty(P_ID propertyId, const QVariant& v)
+bool Clef::setProperty(Pid propertyId, const QVariant& v)
       {
       switch(propertyId) {
-            case P_ID::SHOW_COURTESY: _showCourtesy = v.toBool(); break;
-            case P_ID::SMALL:         setSmall(v.toBool()); break;
+            case Pid::SHOW_COURTESY: _showCourtesy = v.toBool(); break;
+            case Pid::SMALL:         setSmall(v.toBool()); break;
             default:
                   return Element::setProperty(propertyId, v);
             }
+      triggerLayout();
       return true;
       }
 
@@ -456,11 +466,11 @@ bool Clef::setProperty(P_ID propertyId, const QVariant& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-QVariant Clef::propertyDefault(P_ID id) const
+QVariant Clef::propertyDefault(Pid id) const
       {
       switch(id) {
-            case P_ID::SHOW_COURTESY: return true;
-            case P_ID::SMALL:         return false;
+            case Pid::SHOW_COURTESY: return true;
+            case Pid::SMALL:         return false;
             default:              return Element::propertyDefault(id);
             }
       }

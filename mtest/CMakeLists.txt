@@ -49,6 +49,7 @@ add_library(
       ${PROJECT_SOURCE_DIR}/mscore/importgtp-gp4.cpp
       ${PROJECT_SOURCE_DIR}/mscore/importgtp-gp5.cpp
       ${PROJECT_SOURCE_DIR}/mscore/importgtp-gp6.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/importptb.cpp
       ${PROJECT_SOURCE_DIR}/mscore/importove.cpp
       ${PROJECT_SOURCE_DIR}/mscore/ove.cpp
       ${PROJECT_SOURCE_DIR}/mscore/importmidi/importmidi.cpp
@@ -79,6 +80,9 @@ add_library(
       ${PROJECT_SOURCE_DIR}/mscore/importmidi/importmidi_chordname.cpp
       ${PROJECT_SOURCE_DIR}/mscore/exportmidi.cpp
       ${PROJECT_SOURCE_DIR}/mscore/importmxml.cpp               # Required by importxml.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/importmxmllogger.cpp         # Required by importxml.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/importmxmlnoteduration.cpp   # Required by importxml.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/importmxmlnotepitch.cpp      # Required by importxml.cpp
       ${PROJECT_SOURCE_DIR}/mscore/importmxmlpass1.cpp          # Required by importxml.cpp
       ${PROJECT_SOURCE_DIR}/mscore/importmxmlpass2.cpp          # Required by importxml.cpp
       ${PROJECT_SOURCE_DIR}/mscore/importxml.cpp
@@ -86,7 +90,9 @@ add_library(
       ${PROJECT_SOURCE_DIR}/mscore/musicxmlfonthandler.cpp
       ${PROJECT_SOURCE_DIR}/mscore/musicxmlsupport.cpp
       ${PROJECT_SOURCE_DIR}/mscore/qmlplugin.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/preferences.cpp
       ${PROJECT_SOURCE_DIR}/mscore/shortcut.cpp
+      ${PROJECT_SOURCE_DIR}/mscore/stringutils.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/fmt_opts.cpp    # Required by capella.cpp and capxml.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/rtf2html.cpp    # Required by capella.cpp and capxml.cpp
       ${PROJECT_SOURCE_DIR}/thirdparty/rtf2html/rtf_keyword.cpp # Required by capella.cpp and capxml.cpp
@@ -111,21 +117,6 @@ target_link_libraries(
       )
 
 set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
-
-if (APPLE)
-   set(CMAKE_CXX_FLAGS_DEBUG   "-std=c++0x -fPIC -stdlib=libc++ -g -Wno-inconsistent-missing-override")
-   set(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -fPIC -stdlib=libc++ -O2 -DNDEBUG -DQT_NO_DEBUG -Wno-inconsistent-missing-override")
-else (APPLE)
-   if (MINGW)
-      # -mno-ms-bitfields see #22048
-      set(CMAKE_CXX_FLAGS_DEBUG   "-std=gnu++0x -mno-ms-bitfields -g")
-      set(CMAKE_CXX_FLAGS_RELEASE "-std=gnu++0x -mno-ms-bitfields -O2 -DNDEBUG -DQT_NO_DEBUG")
-   else (MINGW)
-      set(CMAKE_CXX_FLAGS_DEBUG   "-std=gnu++0x -fPIC -g")
-      set(CMAKE_CXX_FLAGS_RELEASE "-std=gnu++0x -fPIC -O2 -DNDEBUG -DQT_NO_DEBUG -DQT_NO_DEBUG_OUTPUT")
-   endif (MINGW)
-endif(APPLE)
-
 
 string(REPLACE ";" ";-I" INC "${QT_INCLUDES}")
 
@@ -200,9 +191,10 @@ subdirs (
         importmidi
         capella
         biab
-#        musicxml
+        musicxml
         guitarpro
         scripting
+        stringutils
 #        testoves
         zerberus/comments
         zerberus/envelopes

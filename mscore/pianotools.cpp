@@ -20,6 +20,7 @@
 
 #include "pianotools.h"
 #include "preferences.h"
+#include "libmscore/chord.h"
 
 namespace Ms {
 
@@ -50,6 +51,10 @@ HPiano::HPiano(QWidget* parent)
       grabGesture(Qt::PinchGesture);      // laptop pad (Mac) and touchscreen
 
       scene()->setSceneRect(0.0, 0.0, KEY_WIDTH * 52, KEY_HEIGHT);
+      QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      setSizePolicy(policy);
+      int margin = 16;
+      setMaximumSize(QSize((KEY_WIDTH * 52 + margin/2) * scaleVal, 1000));
 
       _firstKey   = 21;
       _lastKey    = 108;   // 88 key piano
@@ -121,7 +126,15 @@ void HPiano::setScale(qreal s)
       if (s != scaleVal) {
             scaleVal = s;
             int margin = 16;
-            setMaximumSize(QSize((KEY_WIDTH * 52 + margin/2) * scaleVal, (KEY_HEIGHT + margin) * scaleVal ));
+            QDockWidget* par = static_cast<QDockWidget*>(parent());
+            if (par) {
+                  if (!par->isFloating())
+                        setMaximumSize(QSize((KEY_WIDTH * 52 + margin/2) * scaleVal, 1000));
+                  else
+                        setMaximumSize(QSize((KEY_WIDTH * 52 + margin/2) * scaleVal, (KEY_HEIGHT + margin) * scaleVal));
+                  }
+            else
+                  setMaximumSize(QSize((KEY_WIDTH * 52 + margin/2) * scaleVal, (KEY_HEIGHT + margin) * scaleVal));
             setMinimumSize(QSize(100 * scaleVal, (KEY_HEIGHT + margin) * scaleVal));
             QTransform t;
             t.scale(scaleVal, scaleVal);
@@ -169,6 +182,37 @@ void HPiano::releasePitch(int pitch)
       }
 
 //---------------------------------------------------------
+//   changeSelection
+//---------------------------------------------------------
+
+void HPiano::changeSelection(Selection selection)
+      {
+      for (PianoKeyItem* key : keys) {
+            key->setHighlighted(false);
+            key->setSelected(false);
+            }
+      for (Note* n : selection.noteList()) {
+            if (n->epitch() >= _firstKey && n->epitch() <= _lastKey)
+                  keys[n->epitch() - _firstKey]->setSelected(true);
+            for (Note* other : n->chord()->notes())
+                  if (other->epitch() >= _firstKey && other->epitch() <= _lastKey)
+                        keys[other->epitch() - _firstKey]->setHighlighted(true);
+            }
+      for (PianoKeyItem* key : keys)
+            key->update();
+      }
+
+// used when currentScore() is NULL; same as above except the for loop
+void HPiano::clearSelection()
+      {
+      for (PianoKeyItem* key : keys) {
+            key->setHighlighted(false);
+            key->setSelected(false);
+            key->update();
+            }
+      }
+
+//---------------------------------------------------------
 //   updateAllKeys
 //---------------------------------------------------------
 
@@ -178,6 +222,15 @@ void HPiano::updateAllKeys()
             key->setPressed(_pressedPitches.contains(key->pitch()));
             key->update();
             }
+      }
+
+void HPiano::setMaximum(bool top_level) {
+      int margin = 16;
+      if (!top_level)
+            setMaximumSize(QSize((KEY_WIDTH * 52 + margin/2) * scaleVal, 1000));
+      else
+            setMaximumSize(QSize((KEY_WIDTH * 52 + margin/2) * scaleVal, (KEY_HEIGHT + margin) * scaleVal));
+      updateAllKeys();
       }
 
 //---------------------------------------------------------
@@ -190,6 +243,8 @@ PianoKeyItem::PianoKeyItem(HPiano* _piano, int p)
       piano = _piano;
       _pitch = p;
       _pressed = false;
+      _selected = false;
+      _highlighted = false;
       type = -1;
       }
 
@@ -326,10 +381,17 @@ void PianoKeyItem::paint(QPainter* p, const QStyleOptionGraphicsItem* /*o*/, QWi
       p->setRenderHint(QPainter::Antialiasing, true);
       p->setPen(QPen(Qt::black, .8));
       if (_pressed) {
-            QColor c(preferences.pianoHlColor);
+            QColor c(preferences.getColor(PREF_UI_PIANO_HIGHLIGHTCOLOR));
             c.setAlpha(180);
             p->setBrush(c);
             }
+      else if (_selected) {
+            QColor c(preferences.getColor(PREF_UI_PIANO_HIGHLIGHTCOLOR));
+            c.setAlpha(100);
+            p->setBrush(c);
+            }
+      else if (_highlighted)
+            p->setBrush(type >= 7 ? QColor(125, 125, 125) : QColor(200, 200, 200));
       else
             p->setBrush(type >= 7 ? Qt::black : Qt::white);
       p->drawPath(path());
@@ -355,8 +417,12 @@ PianoTools::PianoTools(QWidget* parent)
       _piano->setFocusPolicy(Qt::ClickFocus);
       setWidget(_piano);
 
+      QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      setSizePolicy(policy);
+
       connect(_piano, SIGNAL(keyPressed(int, bool, int)), SIGNAL(keyPressed(int, bool, int)));
       connect(_piano, SIGNAL(keyReleased(int, bool, int)), SIGNAL(keyReleased(int, bool, int)));
+      connect(this, SIGNAL(topLevelChanged(bool)), _piano, SLOT(setMaximum(bool)));
       retranslate();
       }
 
@@ -458,5 +524,18 @@ bool HPiano::gestureEvent(QGestureEvent *event)
             }
       return true;
       }
-}
 
+//---------------------------------------------------------
+//   changeSelection
+//---------------------------------------------------------
+
+void PianoTools::changeSelection(Selection selection)
+      {
+      _piano->changeSelection(selection);
+      }
+
+void PianoTools::clearSelection()
+      {
+      _piano->clearSelection();
+      }
+}

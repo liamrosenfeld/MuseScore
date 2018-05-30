@@ -1,6 +1,6 @@
 @echo off
 
-rem "compare" - image magick compare program
+rem "magick compare" - image magick compare program
 
 set SRC=mmrest-1,bravura-mmrest,gonville-mmrest,mmrest-2,mmrest-4,mmrest-5,mmrest-6,mmrest-7,mmrest-8,mmrest-9, ^
  mmrest-10,fmrest-1,fmrest-2,fmrest-3,fmrest-4,fmrest-5,fmrest-6,measure-repeat-1, ^
@@ -19,12 +19,12 @@ set SRC=mmrest-1,bravura-mmrest,gonville-mmrest,mmrest-2,mmrest-4,mmrest-5,mmres
  emmentaler-text-1,gonville-text-1,bravura-text-1,musejazz-text-1, ^
  emmentaler-text-2,gonville-text-2,bravura-text-2,musejazz-text-2, ^
  emmentaler-text-3,gonville-text-3,bravura-text-3,musejazz-text-3, ^
- frametext,ottava,slurs-1,slurs-2,slurs-3,slurs-4,hairpins-1,pedal-1,line-1,line-2,line-3,line-4,line-5,line-6,gliss-1,gliss-2, ^
+ ottava,slurs-1,slurs-2,slurs-3,slurs-4,hairpins-1,pedal-1,line-1,line-2,line-3,line-4,line-5,line-6,gliss-1,gliss-2, ^
  chord-layout-1,chord-layout-2,chord-layout-3,chord-layout-4,chord-layout-5, ^
  chord-layout-6,chord-layout-7,chord-layout-8,chord-layout-9,chord-layout-10, ^
  chord-layout-11,chord-layout-12,chord-layout-13,chord-layout-14,chord-layout-15,chord-layout-16,cross-1,cross-2, ^
  accidental-1,accidental-2,accidental-3,accidental-4,accidental-5, ^
- accidental-6,accidental-7,accidental-8,accidental-9,accidental-10, ^
+ accidental-6,accidental-7,accidental-8,accidental-9,accidental-10, accidental-mirror ^
  tie-1,tie-2,tie-3,grace-1,grace-2,grace-3,grace-4,tuplets-1,tuplets-2,breath-1, ^
  harmony-1,harmony-2,harmony-3,harmony-4,harmony-5,harmony-6,harmony-7, ^
  harmony-8,harmony-9,harmony-10,harmony-11,harmony-12, ^
@@ -33,7 +33,9 @@ set SRC=mmrest-1,bravura-mmrest,gonville-mmrest,mmrest-2,mmrest-4,mmrest-5,mmres
  user-offset-1,user-offset-2,chord-space-1,chord-space-2,tablature-1,image-1, ^
  lyrics-1,lyrics-2,lyrics-3,lyrics-4,lyrics-5,lyrics-6,lyrics-7,voice-1,voice-2,slash-1,slash-2, ^
  system-1,system-2,system-3,system-4,system-5,system-6,system-7,hide-1,small-1,tremolo-1, ^
- staff-1,staff-2
+ staff-1,staff-2, ^
+ slashed_chord-layout-12, slashed_chord-layout-7, slashed_grace-3, slashed_noteheadposition-1, ^
+ drumset-custom-1, read-206-custom-drumset-1
 
 set MSCORE=..\win32install\bin\musescore.exe
 set DPI=130
@@ -47,7 +49,7 @@ set JSON_FILE=vtestjob.json
 
 echo [ >> %JSON_FILE%
 FOR /D %%a IN (%SRC%) DO (
-      echo { "in": "..\\%%a.mscz",    "out": "%%a.png"}, >> %JSON_FILE%
+      echo { "in": "..\\%%a.mscx",    "out": "%%a.png"}, >> %JSON_FILE%
 
 )
 echo {}] >> %JSON_FILE%
@@ -56,7 +58,7 @@ echo {}] >> %JSON_FILE%
 
 FOR /D %%a IN (%SRC%) DO (
       xcopy ..\%%a-ref.png . /Q > nul
-      compare %%a-1.png %%a-ref.png %%a-diff.png
+      magick compare %%a-1.png %%a-ref.png %%a-diff.png
 )
 
 xcopy ..\style.css . /Q > nul

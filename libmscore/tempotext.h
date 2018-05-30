@@ -26,25 +26,25 @@ namespace Ms {
 //   @P followText  bool      determine tempo from text
 //-------------------------------------------------------------------
 
-class TempoText : public Text  {
-      Q_GADGET
-      Q_PROPERTY(qreal tempo         READ tempo      WRITE undoSetTempo)
-      Q_PROPERTY(bool  followText    READ followText WRITE undoSetFollowText)
-
+class TempoText final : public TextBase  {
       qreal _tempo;           // beats per second
       bool _followText;       // parse text to determine tempo
       qreal _relative;
       bool _isRelative;
+
       void updateScore();
+      void textChanged();
 
    public:
       TempoText(Score*);
       virtual TempoText* clone() const override   { return new TempoText(*this); }
-      virtual ElementType type() const override { return ElementType::TEMPO_TEXT; }
+      virtual ElementType type() const override   { return ElementType::TEMPO_TEXT; }
+
       virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
-      Segment* segment() const   { return (Segment*)parent(); }
-      Measure* measure() const   { return (Measure*)parent()->parent(); }
+
+      Segment* segment() const   { return toSegment(parent()); }
+      Measure* measure() const   { return toMeasure(parent()->parent()); }
 
       qreal tempo() const        { return _tempo;      }
       void setTempo(qreal v);
@@ -57,19 +57,17 @@ class TempoText : public Text  {
       void undoSetFollowText(bool v);
       void updateRelative();
 
-      virtual void textChanged() override;
       virtual void layout();
 
       static int findTempoDuration(const QString& s, int& len, TDuration& dur);
       static QString duration2tempoTextString(const TDuration dur);
       static QString duration2userName(const TDuration t);
 
-      QVariant getProperty(P_ID propertyId) const override;
-      bool setProperty(P_ID propertyId, const QVariant&) override;
-      QVariant propertyDefault(P_ID id) const override;
+      QVariant getProperty(Pid propertyId) const override;
+      bool setProperty(Pid propertyId, const QVariant&) override;
+      QVariant propertyDefault(Pid id) const override;
       virtual QString accessibleInfo() const override;
       };
-
 
 
 }     // namespace Ms

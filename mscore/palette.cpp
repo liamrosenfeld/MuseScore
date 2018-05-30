@@ -45,6 +45,7 @@
 #include "libmscore/slur.h"
 #include "paletteBoxButton.h"
 #include "palettebox.h"
+#include "shortcut.h"
 
 namespace Ms {
 
@@ -406,7 +407,8 @@ static void applyDrop(Score* score, ScoreView* viewer, Element* target, Element*
             // use same code path as drag&drop
 
             QByteArray a = e->mimeData(QPointF());
-            XmlReader e(gscore, a);
+
+            XmlReader e(a);
             Fraction duration;  // dummy
             QPointF dragOffset;
             ElementType type = Element::readType(e, &dragOffset, &duration);
@@ -479,10 +481,14 @@ void Palette::applyPaletteElement(PaletteCell* cell)
                   else
                         qDebug("nowhere to place drum note");
                   }
+            else if (element->isLayoutBreak()) {
+                  LayoutBreak* breakElement = toLayoutBreak(element);
+                  score->cmdToggleLayoutBreak(breakElement->layoutBreakType());
+                  }
             else if (element->isSlur() && addSingle) {
                   viewer->addSlur();
                   }
-            else if (element->isSLine() && element->type() != ElementType::GLISSANDO && addSingle) {
+            else if (element->isSLine() && !element->isGlissando() && addSingle) {
                   Segment* startSegment = cr1->segment();
                   Segment* endSegment = cr2->segment();
                   if (element->type() == ElementType::PEDAL && cr2 != cr1)
@@ -491,7 +497,8 @@ void Palette::applyPaletteElement(PaletteCell* cell)
                   int idx = cr1->staffIdx();
 
                   QByteArray a = element->mimeData(QPointF());
-                  XmlReader e(gscore, a);
+// printf("<<%s>>\n", a.data());
+                  XmlReader e(a);
                   Fraction duration;  // dummy
                   QPointF dragOffset;
                   ElementType type = Element::readType(e, &dragOffset, &duration);
@@ -583,7 +590,7 @@ void Palette::applyPaletteElement(PaletteCell* cell)
                                           {
                                           KeySig* okeysig = new KeySig(score);
                                           okeysig->setKeySigEvent(staff->keySigEvent(tick1));
-                                          if (!score->styleB(StyleIdx::concertPitch) && !okeysig->isCustom() && !okeysig->isAtonal()) {
+                                          if (!score->styleB(Sid::concertPitch) && !okeysig->isCustom() && !okeysig->isAtonal()) {
                                                 Interval v = staff->part()->instrument(tick1)->transpose();
                                                 if (!v.isZero()) {
                                                       Key k = okeysig->key();
@@ -651,14 +658,14 @@ void Palette::applyPaletteElement(PaletteCell* cell)
                               Element* e = s->element(track);
                               if (e == 0 || !score->selectionFilter().canSelect(e) || !score->selectionFilter().canSelectVoice(track))
                                     continue;
-                              if (e->type() == ElementType::CHORD) {
-                                    Chord* chord = static_cast<Chord*>(e);
+                              if (e->isChord()) {
+                                    Chord* chord = toChord(e);
                                     for (Note* n : chord->notes())
                                           applyDrop(score, viewer, n, element);
                                     }
                               else {
                                     // do not apply articulation to barline in a range selection
-                                    if(e->type() != ElementType::BAR_LINE || element->type() != ElementType::ARTICULATION)
+                                    if (!e->isBarLine() || !element->isArticulation())
                                           applyDrop(score, viewer, e, element);
                                     }
                               }
@@ -917,7 +924,6 @@ PaletteCell* Palette::add(int idx, Element* s, const QString& name, QString tag,
       if (s) {
             s->setPos(0.0, 0.0);
             s->setUserOff(QPointF());
-            s->setReadPos(QPointF());
             }
 
       PaletteCell* cell = new PaletteCell;
@@ -974,8 +980,8 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
       p.setRenderHint(QPainter::Antialiasing, true);
 
       QColor bgColor(0xf6, 0xf0, 0xda);
-      if (preferences.fgUseColor)
-            bgColor = preferences.fgColor;
+      if (preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR))
+            bgColor = preferences.getColor(PREF_UI_CANVAS_FG_COLOR);
 #if 1
       p.setBrush(bgColor);
       p.drawRoundedRect(0, 0, width(), height(), 2, 2);
@@ -1011,7 +1017,7 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
 
       // QPen pen(palette().color(QPalette::Normal, QPalette::Text));
       QPen pen(Qt::black);
-      pen.setWidthF(MScore::defaultStyle().value(StyleIdx::staffLineWidth).toDouble() * PALETTE_SPATIUM * extraMag);
+      pen.setWidthF(MScore::defaultStyle().value(Sid::staffLineWidth).toDouble() * PALETTE_SPATIUM * extraMag);
 
       for (int idx = 0; idx < ccp()->size(); ++idx) {
             int yoffset  = gscore->spatium() * _yOffset;
@@ -1252,7 +1258,7 @@ void Palette::write(XmlWriter& xml) const
 
 bool Palette::read(QFile* qf)
       {
-      XmlReader e(gscore, qf);
+      XmlReader e(qf);
       while (e.readNextStartElement()) {
             if (e.name() == "museScore") {
                   QString version = e.attribute("version");
@@ -1294,7 +1300,7 @@ bool Palette::read(const QString& p)
 
       QByteArray ba = f.fileData("META-INF/container.xml");
 
-      XmlReader e(gscore, ba);
+      XmlReader e(ba);
       // extract first rootfile
       QString rootfile = "";
       QList<QString> images;
@@ -1366,8 +1372,8 @@ bool Palette::read(const QString& p)
 
 static void writeFailed(const QString& path)
       {
-      QString s = qApp->translate("Palette", "Writing Palette File\n%1\nfailed: ");
-      QMessageBox::critical(mscore, qApp->translate("Palette", "Writing Palette File"), s.arg(path));
+      QString s = qApp->translate("Palette", "Writing Palette File\n%1\nfailed: ").arg(path); // reason?
+      QMessageBox::critical(mscore, qApp->translate("Palette", "Writing Palette File"), s);
       }
 
 //---------------------------------------------------------
@@ -1809,7 +1815,7 @@ void Palette::dropEvent(QDropEvent* event)
             }
       else if (data->hasFormat(mimeSymbolFormat)) {
             QByteArray data(event->mimeData()->data(mimeSymbolFormat));
-            XmlReader xml(gscore, data);
+            XmlReader xml(data);
             QPointF dragOffset;
             Fraction duration;
             ElementType type = Element::readType(xml, &dragOffset, &duration);

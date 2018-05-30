@@ -35,27 +35,7 @@ static const int DEFAULT_FRETS = 5;
 //   @P fretOffset int
 //---------------------------------------------------------
 
-class FretDiagram : public Element {
-
-#ifdef SCRIPT_INTERFACE
-      Q_GADGET
-
-      Q_PROPERTY(qreal userMag  READ userMag    WRITE undoSetUserMag)
-      Q_PROPERTY(int strings    READ strings    WRITE undoSetStrings)
-      Q_PROPERTY(int frets      READ frets      WRITE undoSetFrets)
-      Q_PROPERTY(int barre      READ barre      WRITE undoSetBarre)
-      Q_PROPERTY(int fretOffset READ fretOffset WRITE undoSetFretOffset)
-
-   public:
-      void undoSetUserMag(qreal val);
-      void undoSetStrings(int val);
-      void undoSetFrets(int val);
-      void undoSetBarre(int val);
-      void undoSetFretOffset(int val);
-
-   private:
-#endif
-
+class FretDiagram final : public Element {
       int _strings       { DEFAULT_STRINGS };
       int maxStrings     { 0 };
       int _frets         { DEFAULT_FRETS };
@@ -75,6 +55,7 @@ class FretDiagram : public Element {
       qreal fretDist;
       QFont font;
       qreal _userMag     { 1.0   };             // allowed 0.1 - 10.0
+      int _numPos;
 
    public:
       FretDiagram(Score* s);
@@ -82,6 +63,8 @@ class FretDiagram : public Element {
       ~FretDiagram();
       virtual void draw(QPainter*) const override;
       virtual FretDiagram* clone() const override { return new FretDiagram(*this); }
+
+      Segment* segment() { return toSegment(parent()); }
 
       static FretDiagram* fromString(Score* score, const QString &s);
 
@@ -127,9 +110,9 @@ class FretDiagram : public Element {
 
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       qreal userMag() const         { return _userMag;   }
       void setUserMag(qreal m)      { _userMag = m;      }

@@ -378,7 +378,7 @@ Tuplet* TrackList::writeTuplet(Tuplet* parent, Tuplet* tuplet, Measure*& measure
                               measure = measure->nextMeasure();
                               rest    = measure->len();
                               if (e != tuplet->elements().back()) {
-                                    // create second part of splitted tuplet
+                                    // create second part of split tuplet
                                     dt = dt->clone();
                                     dt->setGenerated(true);
                                     dt->setParent(measure);
@@ -640,7 +640,7 @@ void ScoreRange::read(Segment* first, Segment* last, bool readSpanner)
             for (auto i : first->score()->spanner()) {
                   Spanner* s = i.second;
                   if (s->tick() >= stick && s->tick() < etick && s->track() >= startTrack && s->track() < endTrack) {
-                        Spanner* ns = static_cast<Spanner*>(s->clone());
+                        Spanner* ns = toSpanner(s->clone());
                         ns->setParent(0);
                         ns->setStartElement(0);
                         ns->setEndElement(0);
@@ -675,9 +675,10 @@ bool ScoreRange::write(Score* score, int tick) const
                   // clone staff if appropriate after all voices have been copied
                   int staffIdx = track / VOICES;
                   Staff* ostaff = score->staff(staffIdx);
-                  LinkedStaves* linkedStaves = ostaff->linkedStaves();
+                  const LinkedElements* linkedStaves = ostaff->links();
                   if (linkedStaves) {
-                        for (Staff* nstaff : linkedStaves->staves()) {
+                        for (auto le : *linkedStaves) {
+                              Staff* nstaff = toStaff(le);
                               if (nstaff == ostaff)
                                     continue;
                               Excerpt::cloneStaff2(ostaff, nstaff, tick, tick + dl->duration().ticks());

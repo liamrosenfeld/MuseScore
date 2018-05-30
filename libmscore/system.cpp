@@ -112,7 +112,8 @@ VBox* System::vbox() const
       {
       if (!ml.empty()) {
             if (ml[0]->isVBox() || ml[0]->isTBox())
-                  return static_cast<VBox*>(ml[0]);
+                  // return toVBox(ml[0]);
+                  return static_cast<VBox*>(ml[0]);   // TODO
             }
       return 0;
       }
@@ -224,8 +225,7 @@ void System::layoutSystem(qreal xo1)
                               if (bi->selected() != b->selected()) {
                                     bi->selected() ? score()->select(b) : score()->deselect(b);
                                     }
-                              b->setFirstStaff(firstStaff);
-                              b->setLastStaff(lastStaff);
+                              b->setStaffSpan(firstStaff, lastStaff);
                               bracketWidth[i] = qMax(bracketWidth[i], b->width());
                               }
                         }
@@ -249,7 +249,7 @@ void System::layoutSystem(qreal xo1)
 
       _leftMargin = xoff2;
 
-      qreal bd = score()->styleP(StyleIdx::bracketDistance);
+      qreal bd = score()->styleP(Sid::bracketDistance);
       if (!_brackets.empty()) {
             for (int w : bracketWidth)
                   _leftMargin += w + bd;
@@ -371,12 +371,13 @@ void System::layout2()
 
       qreal _spatium            = spatium();
       qreal y                   = 0.0;
-      qreal minVerticalDistance = score()->styleP(StyleIdx::minVerticalDistance);
-      qreal staffDistance       = score()->styleP(StyleIdx::staffDistance);
-      qreal akkoladeDistance    = score()->styleP(StyleIdx::akkoladeDistance);
+      qreal minVerticalDistance = score()->styleP(Sid::minVerticalDistance);
+      qreal staffDistance       = score()->styleP(Sid::staffDistance);
+      qreal akkoladeDistance    = score()->styleP(Sid::akkoladeDistance);
 
       if (visibleStaves.empty()) {
             qDebug("====no visible staves, staves %d, score staves %d", _staves.size(), score()->nstaves());
+            return;
             }
 
       for (auto i = visibleStaves.begin();; ++i) {
@@ -564,7 +565,7 @@ void System::setInstrumentNames(bool longName)
       if (vbox())                 // ignore vbox
             return;
       if (!score()->showInstrumentNames()
-              || (score()->styleB(StyleIdx::hideInstrumentNameIfOneInstrument) && score()->parts().size() == 1)) {
+              || (score()->styleB(Sid::hideInstrumentNameIfOneInstrument) && score()->parts().size() == 1)) {
             for (SysStaff* staff : _staves) {
                   foreach (InstrumentName* t, staff->instrumentNames)
                         score()->removeElement(t);
@@ -651,7 +652,7 @@ void System::add(Element* el)
       switch(el->type()) {
             case ElementType::INSTRUMENT_NAME:
 // qDebug("  staffIdx %d, staves %d", el->staffIdx(), _staves.size());
-                  _staves[el->staffIdx()]->instrumentNames.append(static_cast<InstrumentName*>(el));
+                  _staves[el->staffIdx()]->instrumentNames.append(toInstrumentName(el));
                   break;
 
             case ElementType::BEAM:
@@ -690,14 +691,17 @@ void System::add(Element* el)
             case ElementType::HAIRPIN_SEGMENT:
             case ElementType::OTTAVA_SEGMENT:
             case ElementType::TRILL_SEGMENT:
+            case ElementType::VIBRATO_SEGMENT:
             case ElementType::VOLTA_SEGMENT:
             case ElementType::SLUR_SEGMENT:
             case ElementType::TIE_SEGMENT:
             case ElementType::PEDAL_SEGMENT:
             case ElementType::LYRICSLINE_SEGMENT:
             case ElementType::GLISSANDO_SEGMENT:
+            case ElementType::LET_RING_SEGMENT:
+            case ElementType::PALM_MUTE_SEGMENT:
                   {
-                  SpannerSegment* ss = static_cast<SpannerSegment*>(el);
+                  SpannerSegment* ss = toSpannerSegment(el);
 #ifndef NDEBUG
                   if (_spannerSegments.contains(ss))
                         qDebug("System::add() %s %p already there", ss->name(), ss);
@@ -731,14 +735,14 @@ void System::remove(Element* el)
       {
       switch (el->type()) {
             case ElementType::INSTRUMENT_NAME:
-                  _staves[el->staffIdx()]->instrumentNames.removeOne(static_cast<InstrumentName*>(el));
+                  _staves[el->staffIdx()]->instrumentNames.removeOne(toInstrumentName(el));
                   break;
             case ElementType::BEAM:
                   score()->removeElement(el);
                   break;
             case ElementType::BRACKET:
                   {
-                  Bracket* b = static_cast<Bracket*>(el);
+                  Bracket* b = toBracket(el);
                   if (!_brackets.removeOne(b))
                         qDebug("System::remove: bracket not found");
                   }
@@ -754,13 +758,14 @@ void System::remove(Element* el)
             case ElementType::HAIRPIN_SEGMENT:
             case ElementType::OTTAVA_SEGMENT:
             case ElementType::TRILL_SEGMENT:
+            case ElementType::VIBRATO_SEGMENT:
             case ElementType::VOLTA_SEGMENT:
             case ElementType::SLUR_SEGMENT:
             case ElementType::TIE_SEGMENT:
             case ElementType::PEDAL_SEGMENT:
             case ElementType::LYRICSLINE_SEGMENT:
             case ElementType::GLISSANDO_SEGMENT:
-                  if (!_spannerSegments.removeOne(static_cast<SpannerSegment*>(el))) {
+                  if (!_spannerSegments.removeOne(toSpannerSegment(el))) {
                         qDebug("System::remove: %p(%s) not found, score %p", el, el->name(), score());
                         Q_ASSERT(score() == el->score());
                         }
@@ -1021,11 +1026,10 @@ qreal System::minDistance(System* s2) const
       else if (!vbox() && s2->vbox())
             return qMax(s2->vbox()->topGap(), -minBottom());
       else if (vbox() && s2->vbox())
-//            return 0.0;
             return s2->vbox()->topGap() + vbox()->bottomGap();
 
-      qreal minVerticalDistance = score()->styleP(StyleIdx::minVerticalDistance);
-      qreal dist                = score()->styleP(StyleIdx::minSystemDistance);
+      qreal minVerticalDistance = score()->styleP(Sid::minVerticalDistance);
+      qreal dist                = score()->styleP(Sid::minSystemDistance);
       int lastStaff             = _staves.size() - 1;
 
       fixedDownDistance = false;
@@ -1089,6 +1093,7 @@ qreal System::minDistance(System* s2) const
 
 qreal System::topDistance(int staffIdx, const Shape& s) const
       {
+      Q_ASSERT(!vbox());
       qreal dist = -1000000.0;
       for (MeasureBase* mb1 : ml) {
             if (!mb1->isMeasure())
@@ -1105,6 +1110,7 @@ qreal System::topDistance(int staffIdx, const Shape& s) const
 
 qreal System::bottomDistance(int staffIdx, const Shape& s) const
       {
+      Q_ASSERT(!vbox());
       qreal dist = -1000000.0;
       for (MeasureBase* mb1 : ml) {
             if (!mb1->isMeasure())
@@ -1124,10 +1130,9 @@ qreal System::minTop() const
       {
       qreal dist = 0.0;
       for (MeasureBase* mb : ml) {
-            if (mb->type() != ElementType::MEASURE)
+            if (!mb->isMeasure())
                   continue;
-            for (Segment* s = static_cast<Measure*>(mb)->first(); s; s = s->next())
-                  dist = qMin(dist, s->staffShape(0).top());
+            dist = qMax(dist, toMeasure(mb)->staffShape(0).top() + mb->pos().y());
             }
       return dist;
       }
@@ -1142,10 +1147,11 @@ qreal System::minBottom() const
       qreal dist = 0.0;
       int staffIdx = score()->nstaves() - 1;
       for (MeasureBase* mb : ml) {
-            if (mb->type() != ElementType::MEASURE)
+            if (!mb->isMeasure())
                   continue;
-            for (Segment* s = static_cast<Measure*>(mb)->first(); s; s = s->next())
-                  dist = qMax(dist, s->staffShape(staffIdx).bottom());
+//            for (Segment* s = toMeasure(mb)->first(); s; s = s->next())
+//                  dist = qMax(dist, s->staffShape(staffIdx).bottom());
+            dist = qMax(dist, toMeasure(mb)->staffShape(staffIdx).bottom() + mb->pos().y());
             }
       return dist - spatium() * 4;
       }

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>807</width>
-    <height>325</height>
+    <height>355</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -119,7 +119,7 @@
       <item row="3" column="3">
        <widget class="QSpinBox" name="headGroup">
         <property name="toolTip">
-         <string notr="true">Note head group</string>
+         <string notr="true">Notehead group</string>
         </property>
         <property name="readOnly">
          <bool>true</bool>
@@ -157,7 +157,7 @@
          <bool>true</bool>
         </property>
         <property name="minimum">
-         <number>-9999</number>
+         <number>-99999</number>
         </property>
        </widget>
       </item>

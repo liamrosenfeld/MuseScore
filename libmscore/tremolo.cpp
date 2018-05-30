@@ -17,6 +17,7 @@
 #include "measure.h"
 #include "segment.h"
 #include "stem.h"
+#include "sym.h"
 #include "xml.h"
 
 namespace Ms {
@@ -30,6 +31,7 @@ static const char* tremoloName[] = {
       QT_TRANSLATE_NOOP("Tremolo", "16th through stem"),
       QT_TRANSLATE_NOOP("Tremolo", "32nd through stem"),
       QT_TRANSLATE_NOOP("Tremolo", "64th through stem"),
+      QT_TRANSLATE_NOOP("Tremolo", "Buzz roll"),
       QT_TRANSLATE_NOOP("Tremolo", "Eighth between notes"),
       QT_TRANSLATE_NOOP("Tremolo", "16th between notes"),
       QT_TRANSLATE_NOOP("Tremolo", "32nd between notes"),
@@ -71,10 +73,13 @@ void Tremolo::draw(QPainter* painter) const
       {
       painter->setBrush(QBrush(curColor()));
       painter->setPen(Qt::NoPen);
-      painter->drawPath(path);
+      if (tremoloType() == TremoloType::BUZZ_ROLL)
+            drawSymbol(SymId::buzzRoll, painter);
+      else
+            painter->drawPath(path);
       if ((parent() == 0) && !twoNotes()) {
             qreal x = 0.0; // bbox().width() * .25;
-            QPen pen(curColor(), point(score()->styleS(StyleIdx::stemWidth)));
+            QPen pen(curColor(), point(score()->styleS(Sid::stemWidth)));
             painter->setPen(pen);
             qreal _spatium = spatium() * mag();
             painter->drawLine(QLineF(x, -_spatium*.5, x, path.boundingRect().height() + _spatium));
@@ -115,9 +120,9 @@ void Tremolo::layout()
       {
       qreal _spatium  = spatium() * mag();
 
-      qreal w2  = _spatium * score()->styleS(StyleIdx::tremoloWidth).val() * .5;
-      qreal lw  = _spatium * score()->styleS(StyleIdx::tremoloStrokeWidth).val();
-      qreal td  = _spatium * score()->styleS(StyleIdx::tremoloDistance).val();
+      qreal w2  = _spatium * score()->styleS(Sid::tremoloWidth).val() * .5;
+      qreal lw  = _spatium * score()->styleS(Sid::tremoloStrokeWidth).val();
+      qreal td  = _spatium * score()->styleS(Sid::tremoloDistance).val();
       path      = QPainterPath();
 
       qreal ty   = 0.0;
@@ -131,7 +136,7 @@ void Tremolo::layout()
       // if ((parent() == 0) && !twoNotes())
       //       rect.setHeight(rect.height() + _spatium);
 
-      _chord1 = static_cast<Chord*>(parent());
+      _chord1 = toChord(parent());
       if (_chord1 == 0) {
             // just for the palette
             QTransform shearTransform;
@@ -231,7 +236,6 @@ void Tremolo::layout()
 
             setbbox(path.boundingRect());
             setPos(x, y);
-            adjustReadPos();
             return;
             }
       y += (h - bbox().height()) * .5;
@@ -249,7 +253,7 @@ void Tremolo::layout()
             return;
             }
 
-      _chord2 = static_cast<Chord*>(s->element(track()));
+      _chord2 = toChord(s->element(track()));
       _chord2->setTremolo(this);
 
       Stem* stem1 = _chord1->stem();
@@ -300,9 +304,9 @@ void Tremolo::layout()
       x = (x1 + x2) * .5 - _chord1->pagePos().x();
 
       QTransform xScaleTransform;
-      // TODO const qreal H_MULTIPLIER = score()->styleS(StyleIdx::tremoloBeamLengthMultiplier).val();
+      // TODO const qreal H_MULTIPLIER = score()->styleS(Sid::tremoloBeamLengthMultiplier).val();
       const qreal H_MULTIPLIER = 0.62;
-      // TODO const qreal MAX_H_LENGTH = _spatium * score()->styleS(StyleIdx::tremoloBeamLengthMultiplier).val();
+      // TODO const qreal MAX_H_LENGTH = _spatium * score()->styleS(Sid::tremoloBeamLengthMultiplier).val();
       const qreal MAX_H_LENGTH = _spatium * 12.0;
 
       qreal xScaleFactor = qMin(H_MULTIPLIER * (x2 - x1), MAX_H_LENGTH);
@@ -315,10 +319,10 @@ void Tremolo::layout()
 
       if (_chord1->beams() == _chord2->beams() && _chord1->beam()) {
             int beams = _chord1->beams();
-            qreal beamHalfLineWidth = point(score()->styleS(StyleIdx::beamWidth)) * .5 * mag();
+            qreal beamHalfLineWidth = point(score()->styleS(Sid::beamWidth)) * .5 * mag();
             beamYOffset = beams * _chord1->beam()->beamDist() - beamHalfLineWidth;
             if (_chord1->up() != _chord2->up()) {  // cross-staff
-                  beamYOffset += beamYOffset + beamHalfLineWidth;
+                  beamYOffset = 2 * beamYOffset + beamHalfLineWidth;
                   }
             else if (!_chord1->up() && !_chord2->up()) {
                   beamYOffset = -beamYOffset;
@@ -342,7 +346,6 @@ void Tremolo::layout()
 
       setbbox(path.boundingRect());
       setPos(x, y + beamYOffset);
-      adjustReadPos();
       }
 
 //---------------------------------------------------------
@@ -379,19 +382,7 @@ void Tremolo::read(XmlReader& e)
 
 QString Tremolo::tremoloTypeName() const
       {
-      switch(tremoloType()) {
-            case TremoloType::R8:  return QString("r8");
-            case TremoloType::R16: return QString("r16");
-            case TremoloType::R32: return QString("r32");
-            case TremoloType::R64: return QString("r64");
-            case TremoloType::C8:  return QString("c8");
-            case TremoloType::C16: return QString("c16");
-            case TremoloType::C32: return QString("c32");
-            case TremoloType::C64: return QString("c64");
-            default:
-                  break;
-            }
-      return QString("??");
+      return type2name(tremoloType());
       }
 
 //---------------------------------------------------------
@@ -400,7 +391,40 @@ QString Tremolo::tremoloTypeName() const
 
 void Tremolo::setTremoloType(const QString& s)
       {
-      TremoloType t;
+      setTremoloType(name2Type(s));
+      }
+
+
+//---------------------------------------------------------
+//   type2Name
+//---------------------------------------------------------
+
+QString Tremolo::type2name(TremoloType t)
+      {
+      switch(t) {
+            case TremoloType::R8:  return QString("r8");
+            case TremoloType::R16: return QString("r16");
+            case TremoloType::R32: return QString("r32");
+            case TremoloType::R64: return QString("r64");
+            case TremoloType::C8:  return QString("c8");
+            case TremoloType::C16: return QString("c16");
+            case TremoloType::C32: return QString("c32");
+            case TremoloType::C64: return QString("c64");
+            case TremoloType::BUZZ_ROLL: return QString("buzzroll");
+            default:
+                  break;
+            }
+      return QString("??");
+      }
+
+
+//---------------------------------------------------------
+//   nameToType
+//---------------------------------------------------------
+
+TremoloType Tremolo::name2Type(const QString& s)
+      {
+      TremoloType t = TremoloType::INVALID_TREMOLO;
       if (s == "r8")
             t = TremoloType::R8;
       else if (s == "r16")
@@ -417,9 +441,9 @@ void Tremolo::setTremoloType(const QString& s)
             t = TremoloType::C32;
       else if (s == "c64")
             t = TremoloType::C64;
-      else
-            t = TremoloType(s.toInt());    // for compatibility with old tremolo type
-      setTremoloType(t);
+      else if (s == "buzzroll")
+            t = TremoloType::BUZZ_ROLL;
+      return t;
       }
 
 //---------------------------------------------------------
@@ -444,7 +468,7 @@ Fraction Tremolo::tremoloLen() const
 
 QString Tremolo::subtypeName() const
       {
-      return qApp->translate("Tremolo", tremoloName[subtype() - int(TremoloType::R8)]);
+      return qApp->translate("Tremolo", tremoloName[subtype()]);
       }
 
 //---------------------------------------------------------

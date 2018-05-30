@@ -153,11 +153,11 @@ void ScoreView::endEdit()
             harmonyEndEdit();
       else if (tp == ElementType::FIGURED_BASS)
             figuredBassEndEdit();
-      else if (editData.element->isText()) {
-            Text* text = toText(editData.element);
+      else if (editData.element->isTextBase()) {
             // remove text if empty
             // dont do this for TBOX
-            if (text->empty() && text->parent() && text->parent()->type() != ElementType::TBOX)
+            TextBase* text = toTextBase(editData.element);
+            if (text->empty() && text->parent() && !text->parent()->isTBox())
                   _score->undoRemoveElement(text);
             }
 #if 0
@@ -191,10 +191,10 @@ void ScoreView::doDragEdit(QMouseEvent* ev)
       editData.delta = editData.pos - editData.lastPos;
       score()->addRefresh(editData.element->canvasBoundingRect());
 
-      if (editData.element->isText()) {
+      if (editData.element->isTextBase()) {
             if (editData.element->shape().translated(editData.element->pagePos()).contains(editData.pos)) {
                   qDebug("in");
-                  toText(editData.element)->dragTo(editData);
+                  toTextBase(editData.element)->dragTo(editData);
                   }
             else {
                   qDebug("out");

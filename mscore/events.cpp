@@ -171,6 +171,24 @@ void ScoreView::resizeEvent(QResizeEvent* /*ev*/)
       {
       if (_magIdx != MagIdx::MAG_FREE)
             setMag(mscore->getMag(this));
+      emit sizeChanged();
+
+      // The score may need to be repositioned now.
+      // So figure out how far it needs to move in each direction...
+      int dx = 0, dy = 0;
+      constraintCanvas(&dx, &dy);
+
+      if (dx == 0 && dy == 0)
+            return;
+
+      // ...and adjust its position accordingly.
+      _matrix.setMatrix(_matrix.m11(), _matrix.m12(), _matrix.m13(), _matrix.m21(),
+         _matrix.m22(), _matrix.m23(), _matrix.dx()+dx, _matrix.dy()+dy, _matrix.m33());
+      imatrix = _matrix.inverted();
+
+      scroll(dx, dy, QRect(0, 0, width(), height()));
+      emit viewRectChanged();
+      emit offsetChanged(_matrix.dx(), _matrix.dy());
       }
 
 //---------------------------------------------------------
@@ -296,7 +314,7 @@ void ScoreView::mousePressEventNormal(QMouseEvent* ev)
                   _score->select(m, st, staffIdx);
                   _score->setUpdateAll();
                   }
-            else
+            else if (st != SelectType::ADD)
                   _score->deselectAll();
             }
       _score->update();
@@ -357,24 +375,33 @@ void ScoreView::mousePressEvent(QMouseEvent* ev)
                   _score->endCmd();
                   if (_score->inputState().cr())
                         adjustCanvasPosition(_score->inputState().cr(), false);
+                  shadowNote->setVisible(false);
                   break;
 
             case ViewState::EDIT: {
                   if (editData.grips) {
                         qreal a = editData.grip[0].width() * 1.0;
+                        bool gripFound = false;
                         for (int i = 0; i < editData.grips; ++i) {
                               if (editData.grip[i].adjusted(-a, -a, a, a).contains(editData.startMove)) {
                                     editData.curGrip = Grip(i);
                                     updateGrips();
                                     score()->update();
+                                    gripFound = true;
                                     break;
                                     }
+                              }
+                        if (!gripFound) {
+                              changeState(ViewState::NORMAL);
+                              editData.element = e;
+                              mousePressEventNormal(ev);
+                              break;
                               }
                         }
                   else {
                         if (!editData.element->canvasBoundingRect().contains(editData.startMove)) {
-                              editData.element = e;
                               changeState(ViewState::NORMAL);
+                              editData.element = e;
                               mousePressEventNormal(ev);
                               }
                         else {
@@ -533,7 +560,7 @@ void ScoreView::keyPressEvent(QKeyEvent* ev)
 
       if (!( (editData.modifiers & Qt::ShiftModifier) && (editData.key == Qt::Key_Backtab) )) {
             if (editData.element->edit(editData)) {
-                  if (editData.element->isText())
+                  if (editData.element->isTextBase())
                         mscore->textTools()->updateTools(editData);
                   else
                         updateGrips();
@@ -689,24 +716,23 @@ void ScoreView::escapeCmd()
 
 static const char* stateName(ViewState s)
       {
-      const char* p;
       switch (s) {
-            case ViewState::NORMAL:             p = "NORMAL";           break;
-            case ViewState::DRAG:               p = "DRAG";             break;
-            case ViewState::DRAG_OBJECT:        p = "DRAG_OBJECT";      break;
-            case ViewState::EDIT:               p = "EDIT";             break;
-            case ViewState::DRAG_EDIT:          p = "DRAG_EDIT";        break;
-            case ViewState::LASSO:              p = "LASSO";            break;
-            case ViewState::NOTE_ENTRY:         p = "NOTE_ENTRY";       break;
-            case ViewState::PLAY:               p = "PLAY";             break;
-            case ViewState::ENTRY_PLAY:         p = "ENTRY_PLAY";       break;
-            case ViewState::FOTO:               p = "FOTO";             break;
-            case ViewState::FOTO_DRAG:          p = "FOTO_DRAG";        break;
-            case ViewState::FOTO_DRAG_EDIT:     p = "FOTO_DRAG_EDIT";   break;
-            case ViewState::FOTO_DRAG_OBJECT:   p = "FOTO_DRAG_OBJECT"; break;
-            case ViewState::FOTO_LASSO:         p = "FOTO_LASSO";       break;
+            case ViewState::NORMAL:             return "NORMAL";
+            case ViewState::DRAG:               return "DRAG";
+            case ViewState::DRAG_OBJECT:        return "DRAG_OBJECT";
+            case ViewState::EDIT:               return "EDIT";
+            case ViewState::DRAG_EDIT:          return "DRAG_EDIT";
+            case ViewState::LASSO:              return "LASSO";
+            case ViewState::NOTE_ENTRY:         return "NOTE_ENTRY";
+            case ViewState::PLAY:               return "PLAY";
+            case ViewState::ENTRY_PLAY:         return "ENTRY_PLAY";
+            case ViewState::FOTO:               return "FOTO";
+            case ViewState::FOTO_DRAG:          return "FOTO_DRAG";
+            case ViewState::FOTO_DRAG_EDIT:     return "FOTO_DRAG_EDIT";
+            case ViewState::FOTO_DRAG_OBJECT:   return "FOTO_DRAG_OBJECT";
+            case ViewState::FOTO_LASSO:         return "FOTO_LASSO";
             }
-      return p;
+      return "";
       }
 
 //---------------------------------------------------------
@@ -743,8 +769,15 @@ void ScoreView::changeState(ViewState s)
                   break;
             case ViewState::DRAG:
                   break;
-            case ViewState::DRAG_OBJECT:
             case ViewState::FOTO_DRAG_OBJECT:
+                  for (Element* e : _score->selection().elements()) {
+                        e->endDrag(editData);
+                        e->triggerLayout();
+                        }
+                  setDropTarget(0); // this also resets dropAnchor
+                  _score->endCmd();
+                  break;
+            case ViewState::DRAG_OBJECT:
                   endDrag();
                   break;
             case ViewState::FOTO_DRAG_EDIT:

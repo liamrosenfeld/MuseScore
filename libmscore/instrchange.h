@@ -22,9 +22,7 @@ namespace Ms {
 //   @@ InstrumentChange
 //---------------------------------------------------------
 
-class InstrumentChange : public Text  {
-      Q_GADGET
-
+class InstrumentChange final : public TextBase  {
       Instrument* _instrument;  // Staff holds ownership if part of score
 
    public:
@@ -34,7 +32,7 @@ class InstrumentChange : public Text  {
       ~InstrumentChange();
 
       virtual InstrumentChange* clone() const override { return new InstrumentChange(*this); }
-      virtual ElementType type() const override      { return ElementType::INSTRUMENT_CHANGE; }
+      virtual ElementType type() const override        { return ElementType::INSTRUMENT_CHANGE; }
       virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
 
@@ -45,9 +43,9 @@ class InstrumentChange : public Text  {
 
       Segment* segment() const              { return toSegment(parent()); }
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
       };
 
 

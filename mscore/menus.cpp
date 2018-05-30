@@ -80,6 +80,10 @@
 #include "libmscore/bagpembell.h"
 #include "libmscore/ambitus.h"
 #include "libmscore/stafftypechange.h"
+#include "libmscore/letring.h"
+#include "libmscore/vibrato.h"
+#include "libmscore/palmmute.h"
+#include "libmscore/fermata.h"
 
 namespace Ms {
 
@@ -483,7 +487,7 @@ Palette* MuseScore::newBreaksPalette()
             };
       LayoutBreak* lb = new LayoutBreak(gscore);
       lb->setLayoutBreakType(LayoutBreak::Type::LINE);
-      PaletteCell* cell = sp->append(lb, tr("Line break"));
+      PaletteCell* cell = sp->append(lb, tr("System break"));
       cell->mag = 1.2;
 
       lb = new LayoutBreak(gscore);
@@ -542,22 +546,19 @@ Palette* MuseScore::newFingeringPalette()
             }
       finger = "pimac";
       for (unsigned i = 0; i < strlen(finger); ++i) {
-            Fingering* f = new Fingering(gscore);
-            f->initSubStyle(SubStyle::RH_GUITAR_FINGERING);
+            Fingering* f = new Fingering(SubStyleId::RH_GUITAR_FINGERING, gscore);
             f->setXmlText(QString(finger[i]));
             sp->append(f, tr("RH Guitar Fingering %1").arg(finger[i]));
             }
       for (char c : "012345") {
-            Fingering* f = new Fingering(gscore);
-            f->initSubStyle(SubStyle::LH_GUITAR_FINGERING);
+            Fingering* f = new Fingering(SubStyleId::LH_GUITAR_FINGERING, gscore);
             f->setXmlText(QString(c));
             sp->append(f, tr("LH Guitar Fingering %1").arg(c));
             }
 
       const char* stringnumber = "0123456";
       for (unsigned i = 0; i < strlen(stringnumber); ++i) {
-            Fingering* f = new Fingering(gscore);
-            f->initSubStyle(SubStyle::STRING_NUMBER);
+            Fingering* f = new Fingering(SubStyleId::STRING_NUMBER, gscore);
             f->setXmlText(QString(stringnumber[i]));
             sp->append(f, tr("String number %1").arg(stringnumber[i]));
             }
@@ -638,8 +639,10 @@ Palette* MuseScore::newArticulationsPalette(PaletteType t)
 
       switch (t) {
             case PaletteType::BASIC: {
+                  Fermata* f = new Fermata(SymId::fermataAbove, gscore);
+                  sp->append(f, f->userName());
+
                   static const std::vector<SymId> art {
-                        SymId::fermataAbove,
                         SymId::articAccentAbove,
                         SymId::articStaccatoAbove,
                         SymId::articTenutoAbove,
@@ -659,7 +662,7 @@ Palette* MuseScore::newArticulationsPalette(PaletteType t)
             case PaletteType::MASTER:
             case PaletteType::ADVANCED: {
                   // do not include additional symbol-based fingerings (temporarily?) implemented as articulations
-                  static const std::vector<SymId> art {
+                  static const std::vector<SymId> fermatas {
                         SymId::fermataAbove,
                         SymId::fermataShortAbove,
                         SymId::fermataLongAbove,
@@ -667,7 +670,12 @@ Palette* MuseScore::newArticulationsPalette(PaletteType t)
                         SymId::fermataShortHenzeAbove,
                         SymId::fermataVeryLongAbove,
                         SymId::fermataVeryShortAbove,
-
+                        };
+                  for (auto i : fermatas) {
+                        Fermata* f = new Fermata(i, gscore);
+                        sp->append(f, f->userName());
+                        }
+                  static const std::vector<SymId> art {
                         SymId::articAccentAbove,
                         SymId::articStaccatoAbove,
                         SymId::articStaccatissimoAbove,
@@ -750,7 +758,7 @@ Palette* MuseScore::newOrnamentsPalette()
             SymId::ornamentTremblement,
             SymId::ornamentPrallMordent,
             SymId::ornamentUpPrall,
-            SymId::ornamentDownPrall,
+            SymId::ornamentPrecompMordentUpperPrefix,       // SymId::ornamentDownPrall,
             SymId::ornamentUpMordent,
             SymId::ornamentDownMordent,
             SymId::ornamentPrallDown,
@@ -914,7 +922,7 @@ Palette* MuseScore::newArpeggioPalette()
             }
       for (int i = 0; i < 2; ++i) {
             Glissando* a = new Glissando(gscore);
-            a->setGlissandoType(Glissando::Type(i));
+            a->setGlissandoType(GlissandoType(i));
             sp->append(a, tr("Glissando"));
             }
 
@@ -1171,7 +1179,7 @@ Palette* MuseScore::newLinesPalette(PaletteType t)
       ottava = new Ottava(gscore);
       ottava->setOttavaType(OttavaType::OTTAVA_8VB);
       ottava->setLen(w);
-      ottava->setPlacement(Element::Placement::BELOW);
+      ottava->setPlacement(Placement::BELOW);
       sp->append(ottava, QT_TRANSLATE_NOOP("Palette", "8vb"));
 
       if (t != PaletteType::BASIC) {
@@ -1183,7 +1191,7 @@ Palette* MuseScore::newLinesPalette(PaletteType t)
             ottava = new Ottava(gscore);
             ottava->setOttavaType(OttavaType::OTTAVA_15MB);
             ottava->setLen(w);
-            ottava->setPlacement(Element::Placement::BELOW);
+            ottava->setPlacement(Placement::BELOW);
             sp->append(ottava, QT_TRANSLATE_NOOP("Palette", "15mb"));
 
             ottava = new Ottava(gscore);
@@ -1260,6 +1268,21 @@ Palette* MuseScore::newLinesPalette(PaletteType t)
 
             Ambitus* a = new Ambitus(gscore);
             sp->append(a, QT_TRANSLATE_NOOP("Palette", "Ambitus"));
+
+            LetRing* letRing = new LetRing(gscore);
+            letRing->setLen(w);
+            sp->append(letRing, QT_TRANSLATE_NOOP("Palette", "Let Ring"));
+
+            for (int i = 0; i < vibratoTableSize(); i++) {
+                  Vibrato* vibrato = new Vibrato(gscore);
+                  vibrato->setVibratoType(vibratoTable[i].type);
+                  vibrato->setLen(w);
+                  sp->append(vibrato, qApp->translate("vibratoType", vibratoTable[i].userName.toUtf8().constData()));
+                  }
+
+            PalmMute* pm = new PalmMute(gscore);
+            pm->setLen(w);
+            sp->append(pm, QT_TRANSLATE_NOOP("Palette", "Palm Mute"));
             }
       else {
             sp->setMoreElements(true);
@@ -1387,9 +1410,9 @@ Palette* MuseScore::newTextPalette()
       st->setXmlText(tr("Staff Text"));
       sp->append(st, tr("Staff text"));
 
-      st = new StaffText(SubStyle::EXPRESSION, gscore);
+      st = new StaffText(SubStyleId::EXPRESSION, gscore);
       st->setXmlText(tr("Expression"));
-      st->setPlacement(Element::Placement::BELOW);
+      st->setPlacement(Placement::BELOW);
       sp->append(st, tr("Expression text"));
 
       InstrumentChange* is = new InstrumentChange(gscore);
@@ -1403,14 +1426,14 @@ Palette* MuseScore::newTextPalette()
       rhm->setXmlText("B1");
       sp->append(rhm, tr("Rehearsal mark"));
 
-      st = new StaffText(SubStyle::TEMPO, gscore);
+      st = new StaffText(SubStyleId::TEMPO, gscore);
       st->setXmlText(tr("Swing"));
       st->setSwing(true);
       sp->append(st, tr("Swing"));
 
-      st = new SystemText(gscore);
-      st->setXmlText(tr("System Text"));
-      sp->append(st, tr("System text"));
+      SystemText* stxt = new SystemText(gscore);
+      stxt->setXmlText(tr("System Text"));
+      sp->append(stxt, tr("System text"));
 
       return sp;
       }

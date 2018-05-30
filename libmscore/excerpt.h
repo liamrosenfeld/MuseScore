@@ -32,10 +32,6 @@ class XmlReader;
 #include <QMultiMap>
 
 class Excerpt : public QObject {
-      Q_GADGET
-      Q_PROPERTY(Ms::Score*  partScore  READ partScore)
-      Q_PROPERTY(QString     title      READ title)
-
       MasterScore* _oscore;
 
       Score* _partScore           { 0 };
@@ -45,6 +41,7 @@ class Excerpt : public QObject {
 
    public:
       Excerpt(MasterScore* s = 0)          { _oscore = s;       }
+      ~Excerpt();
 
       QList<Part*>& parts()                { return _parts;     }
       void setParts(const QList<Part*>& p) { _parts = p;        }

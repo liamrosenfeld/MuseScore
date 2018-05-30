@@ -45,7 +45,7 @@ static void transposeChord(Chord* c, Interval srcTranspose, int tick)
       {
       // set note track
       // check if staffMove moves a note to a
-      // nonexistant staff
+      // nonexistent staff
       //
       int track  = c->track();
       int nn     = (track / VOICES) + c->staffMove();
@@ -266,7 +266,7 @@ bool Score::pasteStaff(XmlReader& e, Segment* dst, int dstStaff)
                            || tag == "Trill"
                            || tag == "TextLine"
                            || tag == "Volta") {
-                              Spanner* sp = static_cast<Spanner*>(Element::name2Element(tag, this));
+                              Spanner* sp = toSpanner(Element::name2Element(tag, this));
                               sp->setAnchor(Spanner::Anchor::SEGMENT);
                               sp->read(e);
                               sp->setTrack(e.track());
@@ -309,7 +309,7 @@ bool Score::pasteStaff(XmlReader& e, Segment* dst, int dstStaff)
                               // transpose
                               Part* partDest = staff(e.track() / VOICES)->part();
                               Interval interval = partDest->instrument(e.tick())->transpose();
-                              if (!styleB(StyleIdx::concertPitch) && !interval.isZero()) {
+                              if (!styleB(Sid::concertPitch) && !interval.isZero()) {
                                     interval.flip();
                                     int rootTpc = transposeTpc(harmony->rootTpc(), interval, true);
                                     int baseTpc = transposeTpc(harmony->baseTpc(), interval, true);
@@ -409,7 +409,7 @@ bool Score::pasteStaff(XmlReader& e, Segment* dst, int dstStaff)
             s->connectTies();
 
       if (pasted) {                       //select only if we pasted something
-//TODO?            if (styleB(StyleIdx::createMultiMeasureRests))
+//TODO?            if (styleB(Sid::createMultiMeasureRests))
 //                  createMMRests();
             Segment* s1 = tick2segmentMM(dstTick);
             Segment* s2 = tick2segmentMM(dstTick + tickLen);
@@ -654,7 +654,7 @@ void Score::pasteSymbols(XmlReader& e, ChordRest* dst)
                                     // transpose
                                     Part* partDest = staff(track2staff(destTrack))->part();
                                     Interval interval = partDest->instrument(destTick)->transpose();
-                                    if (!styleB(StyleIdx::concertPitch) && !interval.isZero()) {
+                                    if (!styleB(Sid::concertPitch) && !interval.isZero()) {
                                           interval.flip();
                                           int rootTpc = transposeTpc(el->rootTpc(), interval, true);
                                           int baseTpc = transposeTpc(el->baseTpc(), interval, true);
@@ -830,10 +830,11 @@ void Score::cmdPaste(const QMimeData* ms, MuseScoreView* view)
             }
       if ((_selection.isSingle() || _selection.isList()) && ms->hasFormat(mimeSymbolFormat)) {
             QByteArray data(ms->data(mimeSymbolFormat));
-            XmlReader e(this, data);
+            XmlReader e(data);
             QPointF dragOffset;
             Fraction duration(1, 4);
             ElementType type = Element::readType(e, &dragOffset, &duration);
+            e.setPasteMode(true);
 
             QList<Element*> els;
             if (_selection.isSingle())
@@ -845,23 +846,22 @@ void Score::cmdPaste(const QMimeData* ms, MuseScoreView* view)
                   Element* el = Element::create(type, this);
                   if (el) {
                         el->read(e);
-                        if (el) {
-                              for (Element* target : els) {
-                                    Element* nel = el->clone();
-                                    addRefresh(target->abbox());   // layout() ?!
-                                    EditData ddata(view);
-                                    ddata.view       = view;
-                                    ddata.element    = nel;
-                                    ddata.duration   = duration;
-                                    if (target->acceptDrop(ddata)) {
-                                          target->drop(ddata);
-                                          if (_selection.element())
-                                                addRefresh(_selection.element()->abbox());
-                                          }
+                        for (Element* target : els) {
+                              el->setTrack(target->track());
+                              Element* nel = el->clone();
+                              addRefresh(target->abbox());   // layout() ?!
+                              EditData ddata(view);
+                              ddata.view       = view;
+                              ddata.element    = nel;
+                              ddata.duration   = duration;
+                              if (target->acceptDrop(ddata)) {
+                                    target->drop(ddata);
+                                    if (_selection.element())
+                                          addRefresh(_selection.element()->abbox());
                                     }
                               }
-                              delete el;
                         }
+                  delete el;
                   }
             else
                   qDebug("cannot read type");
@@ -893,7 +893,7 @@ void Score::cmdPaste(const QMimeData* ms, MuseScoreView* view)
                   QByteArray data(ms->data(mimeStaffListFormat));
                   if (MScore::debugMode)
                         qDebug("paste <%s>", data.data());
-                  XmlReader e(this, data);
+                  XmlReader e(data);
                   e.setPasteMode(true);
                   if (!pasteStaff(e, cr->segment(), cr->staffIdx()))
                         return;
@@ -926,7 +926,7 @@ void Score::cmdPaste(const QMimeData* ms, MuseScoreView* view)
                   QByteArray data(ms->data(mimeSymbolListFormat));
                   if (MScore::debugMode)
                         qDebug("paste <%s>", data.data());
-                  XmlReader e(this, data);
+                  XmlReader e(data);
                   pasteSymbols(e, cr);
                   }
             }

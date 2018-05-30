@@ -32,10 +32,10 @@ namespace Ms {
 //---------------------------------------------------------
 
 Stem::Stem(Score* s)
-   : Element(s)
+   : Element(s, ElementFlag::SELECTABLE)
       {
-      setFlags(ElementFlag::SELECTABLE);
-      _lineWidth = score()->styleS(StyleIdx::stemWidth).val() * spatium();
+      initSubStyle(SubStyleId::STEM);
+      resetProperty(Pid::USER_LEN);
       }
 
 //---------------------------------------------------------
@@ -75,8 +75,8 @@ void Stem::layout()
       Staff* stf = staff();
       if (chord()) {
             int tick = chord()->tick();
-            StaffType* st = stf->staffType(tick);
-            if (st->isTabStaff() ) {            // TAB staves
+            StaffType* st = stf ? stf->staffType(tick) : nullptr;
+            if (st && st->isTabStaff() ) {            // TAB staves
                   if (st->stemThrough()) {
                         // if stems through staves, gets Y pos. of stem-side note relative to chord other side
                         qreal lineDist = st->lineDistance().val() * spatium();
@@ -84,7 +84,7 @@ void Stem::layout()
                         // if fret marks above lines, raise stem beginning by 1/2 line distance
                         if (!st->onLines())
                               y1 -= lineDist * 0.5;
-                        // shorten stem by 1/2 lineDist to clear the note and a little more to keep 'air' betwen stem and note
+                        // shorten stem by 1/2 lineDist to clear the note and a little more to keep 'air' between stem and note
                         lineDist *= 0.7 * mag();
                         y1       += _up * lineDist;
                         }
@@ -105,7 +105,6 @@ void Stem::layout()
       // compute bounding rectangle
       QRectF r(line.p1(), line.p2());
       setbbox(r.normalized().adjusted(-lw5, -lw5, lw5, lw5));
-      adjustReadPos();  // does not work if stem is layouted twice
       }
 
 //---------------------------------------------------------
@@ -188,7 +187,7 @@ void Stem::draw(QPainter* painter) const
       if (nDots > 0 && !stt->stemThrough()) {
             qreal x     = chord()->dotPosX();
             qreal y     = ( (STAFFTYPE_TAB_DEFAULTSTEMLEN_DN * 0.2) * sp) * (_up ? -1.0 : 1.0);
-            qreal step  = score()->styleS(StyleIdx::dotDotDistance).val() * sp;
+            qreal step  = score()->styleS(Sid::dotDotDistance).val() * sp;
             for (int dot = 0; dot < nDots; dot++, x += step)
                   drawSymbol(SymId::augmentationDot, painter, QPointF(x, y));
             }
@@ -202,8 +201,8 @@ void Stem::write(XmlWriter& xml) const
       {
       xml.stag("Stem");
       Element::writeProperties(xml);
-      if (_userLen != 0.0)
-            xml.tag("userLen", _userLen / spatium());
+      writeProperty(xml, Pid::USER_LEN);
+      writeProperty(xml, Pid::LINE_WIDTH);
       xml.etag();
       }
 
@@ -214,14 +213,28 @@ void Stem::write(XmlWriter& xml) const
 void Stem::read(XmlReader& e)
       {
       while (e.readNextStartElement()) {
-            const QStringRef& tag(e.name());
-            if (tag == "userLen")
-                  _userLen = e.readDouble() * spatium();
-            else if (tag == "subtype")        // obsolete
-                  e.skipCurrentElement();
-            else if (!Element::readProperties(e))
+            if (!readProperties(e))
                   e.unknown();
             }
+      }
+
+//---------------------------------------------------------
+//   readProperties
+//---------------------------------------------------------
+
+bool Stem::readProperties(XmlReader& e)
+      {
+      const QStringRef& tag(e.name());
+
+      if (readProperty(tag, e, Pid::USER_LEN))
+            ;
+      else if (readStyledProperty(e, tag))
+            ;
+      else if (Element::readProperties(e))
+            ;
+      else
+            return false;
+      return true;
       }
 
 //---------------------------------------------------------
@@ -239,9 +252,10 @@ void Stem::updateGrips(EditData& ed) const
 
 void Stem::startEdit(EditData& ed)
       {
+      Element::startEdit(ed);
       ed.grips   = 1;
       ed.curGrip = Grip::START;
-      undoPushProperty(P_ID::USER_LEN);
+      undoPushProperty(Pid::USER_LEN);
       }
 
 //---------------------------------------------------------
@@ -264,7 +278,7 @@ void Stem::editDrag(EditData& ed)
 
 void Stem::reset()
       {
-      undoChangeProperty(P_ID::USER_LEN, 0.0);
+      undoChangeProperty(Pid::USER_LEN, 0.0);
       Element::reset();
       }
 
@@ -275,7 +289,7 @@ void Stem::reset()
 bool Stem::acceptDrop(EditData& data) const
       {
       Element* e = data.element;
-      if ((e->type() == ElementType::TREMOLO) && (static_cast<Tremolo*>(e)->tremoloType() <= TremoloType::R64)) {
+      if ((e->type() == ElementType::TREMOLO) && (toTremolo(e)->tremoloType() <= TremoloType::R64)) {
             return true;
             }
       return false;
@@ -306,10 +320,13 @@ Element* Stem::drop(EditData& data)
 //   getProperty
 //---------------------------------------------------------
 
-QVariant Stem::getProperty(P_ID propertyId) const
+QVariant Stem::getProperty(Pid propertyId) const
       {
       switch(propertyId) {
-            case P_ID::USER_LEN: return userLen();
+            case Pid::LINE_WIDTH:
+                  return lineWidth();
+            case Pid::USER_LEN:
+                  return userLen();
             default:
                   return Element::getProperty(propertyId);
             }
@@ -319,10 +336,13 @@ QVariant Stem::getProperty(P_ID propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Stem::setProperty(P_ID propertyId, const QVariant& v)
+bool Stem::setProperty(Pid propertyId, const QVariant& v)
       {
       switch (propertyId) {
-            case P_ID::USER_LEN:
+            case Pid::LINE_WIDTH:
+                  setLineWidth(v.toReal());
+                  break;
+            case Pid::USER_LEN:
                   setUserLen(v.toDouble());
                   break;
             default:
@@ -330,6 +350,22 @@ bool Stem::setProperty(P_ID propertyId, const QVariant& v)
             }
       triggerLayout();
       return true;
+      }
+
+//---------------------------------------------------------
+//   propertyDefault
+//---------------------------------------------------------
+
+QVariant Stem::propertyDefault(Pid id) const
+      {
+      switch (id) {
+            case Pid::USER_LEN:
+                  return 0.0;
+//            case Pid::LINE_WIDTH:
+//                  return score()->styleP(Sid::stemWidth);
+            default:
+                  return Element::propertyDefault(id);
+            }
       }
 
 //---------------------------------------------------------

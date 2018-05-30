@@ -39,6 +39,7 @@ class System;
 class Element;
 class Note;
 class Tuplet;
+class BarLine;
 
 enum class ClefType : signed char;
 

@@ -45,6 +45,7 @@ class BracketItem;
 
 enum class Key;
 
+#if 0
 //---------------------------------------------------------
 //   LinkedStaves
 //---------------------------------------------------------
@@ -60,6 +61,7 @@ class LinkedStaves {
       void remove(Staff*);
       bool empty() const { return _staves.empty(); }
       };
+#endif
 
 //---------------------------------------------------------
 //   SwingParameters
@@ -75,9 +77,7 @@ struct SwingParameters {
 ///    Global staff data not directly related to drawing.
 //---------------------------------------------------------
 
-class Staff : public ScoreElement {
-      Q_GADGET
-
+class Staff final : public ScoreElement {
    public:
       enum class HideMode { AUTO, ALWAYS, NEVER, INSTRUMENT };
 
@@ -98,7 +98,7 @@ class Staff : public ScoreElement {
       bool _invisible          { false };
       bool _cutaway            { false };
       bool _showIfEmpty        { false };       ///< show this staff if system is empty and hideEmptyStaves is true
-      bool _hideSystemBarLine  { false };       // no system barline if not preceeded by staff with barline
+      bool _hideSystemBarLine  { false };       // no system barline if not preceded by staff with barline
       HideMode _hideWhenEmpty  { HideMode::AUTO };    // hide empty staves
 
       QColor _color            { MScore::defaultColor };
@@ -106,7 +106,7 @@ class Staff : public ScoreElement {
 
       StaffTypeList _staffTypeList;
 
-      LinkedStaves* _linkedStaves { 0 };
+//      LinkedStaves* _linkedStaves { 0 };
       QMap<int,int> _channelList[VOICES];
       QMap<int,SwingParameters> _swingList;
       bool _playbackVoice[VOICES] { true, true, true, true };
@@ -235,12 +235,12 @@ class Staff : public ScoreElement {
       int pitchOffset(int tick)        { return _pitchOffsets.pitchOffset(tick);   }
       void updateOttava();
 
-      LinkedStaves* linkedStaves() const    { return _linkedStaves; }
-      void setLinkedStaves(LinkedStaves* l) { _linkedStaves = l;    }
+//      LinkedStaves* linkedStaves() const    { return _linkedStaves; }
+//      void setLinkedStaves(LinkedStaves* l) { _linkedStaves = l;    }
       QList<Staff*> staffList() const;
-      void linkTo(Staff* staff);
-      bool isLinked(Staff* staff);
-      void unlink(Staff* staff);
+//      void linkTo(Staff* staff);
+//      bool isLinked(Staff* staff);
+//      void unlink(Staff* staff);
       bool primaryStaff() const;
 
       qreal userDist() const        { return _userDist;  }
@@ -255,9 +255,9 @@ class Staff : public ScoreElement {
       void undoSetColor(const QColor& val);
       void insertTime(int tick, int len);
 
-      virtual QVariant getProperty(P_ID) const override;
-      virtual bool setProperty(P_ID, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid) const override;
+      virtual bool setProperty(Pid, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       BracketType innerBracket() const;
 

@@ -49,7 +49,7 @@ Measure* Score::tick2measure(int tick) const
       if (tick == -1)
             return lastMeasure();
 
-      Q_ASSERT(firstMeasure());
+//      Q_ASSERT(firstMeasure());
       Measure* lm = 0;
       for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
             if (tick < m->tick())
@@ -388,7 +388,7 @@ Note* prevChordNote(Note* note)
 
 //---------------------------------------------------------
 //   pitchKeyAdjust
-//    change entered note to sounding pitch dependend
+//    change entered note to sounding pitch dependent
 //    on key.
 //    Example: if F is entered in G-major, a Fis is played
 //    key -7 ... +7
@@ -508,7 +508,7 @@ QString pitch2string(int v)
       {
       if (v < 0 || v > 127)
             return QString("----");
-      int octave = (v / 12) - 2;
+      int octave = (v / 12) - 1;
       QString o;
       o.sprintf("%d", octave);
       int i = v % 12;
@@ -771,9 +771,22 @@ Note* searchTieNote(Note* note)
       int etrack   = strack + part->staves()->size() * VOICES;
 
       if (chord->isGraceBefore()) {
-            // grace before
-            // try to tie to note in parent chord
             chord = toChord(chord->parent());
+
+            // try to tie to next grace note
+
+            int index = chord->graceIndex();
+            for (Chord* c : chord->graceNotes()) {
+                  if (c->graceIndex() == index + 1) {
+                        note2 = c->findNote(note->pitch());
+                        if (note2) {
+                              printf("found grace-grace tie\n");
+                              return note2;
+                              }
+                        }
+                  }
+
+            // try to tie to note in parent chord
             note2 = chord->findNote(note->pitch());
             if (note2)
                   return note2;
@@ -853,9 +866,10 @@ Note* searchTieNote114(Note* note)
 
       while ((seg = seg->next1(SegmentType::ChordRest))) {
             for (int track = strack; track < etrack; ++track) {
-                  Chord* c = toChord(seg->element(track));
-                  if (c == 0 || (!c->isChord()) || (c->track() != chord->track()))
+                  Element* e = seg->element(track);
+                  if (e == 0 || (!e->isChord()) || (e->track() != chord->track()))
                         continue;
+                  Chord* c = toChord(e);
                   int staffIdx = c->staffIdx() + c->staffMove();
                   if (staffIdx != chord->staffIdx() + chord->staffMove())  // cannot happen?
                         continue;

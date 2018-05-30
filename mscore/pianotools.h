@@ -22,6 +22,7 @@
 #define __PIANOTOOLS_H__
 
 #include "libmscore/note.h"
+#include "libmscore/select.h"
 
 namespace Ms {
 
@@ -35,6 +36,8 @@ class PianoKeyItem : public QGraphicsPathItem {
       int type;
       int _pitch;
       bool _pressed;
+      bool _highlighted;
+      bool _selected;
       HPiano* piano;
 
       virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
@@ -46,6 +49,8 @@ class PianoKeyItem : public QGraphicsPathItem {
       void setType(int val);
       int pitch() { return _pitch; }
       void setPressed(bool p) { _pressed = p; }
+      void setHighlighted(bool h) { _highlighted = h; }
+      void setSelected(bool s) { _selected = s; }
       };
 
 //---------------------------------------------------------
@@ -74,8 +79,13 @@ class HPiano : public QGraphicsView {
       void setPressedPitches(QSet<int> pitches);
       void pressPitch(int pitch);
       void releasePitch(int pitch);
+      void clearSelection();
+      void changeSelection(Selection selection);
       void updateAllKeys();
       virtual QSize sizeHint() const;
+
+   public slots:
+      void setMaximum(bool top_level);
       };
 
 //---------------------------------------------------------
@@ -100,6 +110,8 @@ class PianoTools : public QDockWidget {
       void pressPitch(int pitch)    { _piano->pressPitch(pitch);   }
       void releasePitch(int pitch)  { _piano->releasePitch(pitch); }
       void heartBeat(QList<const Note*> notes);
+      void clearSelection();
+      void changeSelection(Selection selection);
       };
 
 

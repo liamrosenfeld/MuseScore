@@ -25,6 +25,21 @@ void Shape::translate(const QPointF& pt)
             r.translate(pt);
       }
 
+void Shape::translateX(qreal xo)
+      {
+      for (QRectF& r : *this) {
+            r.setLeft(r.left() + xo);
+            r.setRight(r.right() + xo);
+            }
+      }
+void Shape::translateY(qreal yo)
+      {
+      for (QRectF& r : *this) {
+            r.setTop(r.top() + yo);
+            r.setBottom(r.bottom() + yo);
+            }
+      }
+
 //---------------------------------------------------------
 //   translated
 //---------------------------------------------------------
@@ -32,8 +47,12 @@ void Shape::translate(const QPointF& pt)
 Shape Shape::translated(const QPointF& pt) const
       {
       Shape s;
-      for (const QRectF& r : *this)
+      for (const ShapeElement& r : *this)
+#ifndef NDEBUG
+            s.add(r.translated(pt), r.text);
+#else
             s.add(r.translated(pt));
+#endif
       return s;
       }
 
@@ -254,11 +273,25 @@ void Shape::paint(QPainter& p)
 void Shape::dump(const char* p) const
       {
       printf("Shape dump: %p %s size %d\n", this, p, size());
-      for (const QRectF& r : *this) {
-            printf("   %f %f %f %f\n", r.x(), r.y(), r.width(), r.height());
+      for (const ShapeElement& r : *this) {
+            r.dump();
             }
-
       }
+
+void ShapeElement::dump() const
+      {
+      printf("   %s: %f %f %f %f\n", text ? text : "", x(), y(), width(), height());
+      }
+
+//---------------------------------------------------------
+//   add
+//---------------------------------------------------------
+
+void Shape::add(const QRectF& r, const char* t)
+      {
+      push_back(ShapeElement(r, t));
+      }
+
 #endif
 
 #ifdef DEBUG_SHAPES

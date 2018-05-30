@@ -136,6 +136,8 @@ class UndoStack {
       bool canUndo() const          { return curIdx > 0;           }
       bool canRedo() const          { return curIdx < list.size(); }
       bool isClean() const          { return cleanIdx == curIdx;   }
+      int getCurIdx() const         { return curIdx; }
+      void remove(int idx);
       bool empty() const            { return !canUndo() && !canRedo();  }
       UndoCommand* current() const  { return curCmd;               }
       void undo(EditData*);
@@ -627,13 +629,13 @@ class ChangeStyle : public UndoCommand {
 
 class ChangeStyleVal : public UndoCommand {
       Score* score;
-      StyleIdx idx;
+      Sid idx;
       QVariant value;
 
       void flip(EditData*) override;
 
    public:
-      ChangeStyleVal(Score* s, StyleIdx i, const QVariant& v) : score(s), idx(i), value(v) {}
+      ChangeStyleVal(Score* s, Sid i, const QVariant& v) : score(s), idx(i), value(v) {}
       UNDO_NAME("ChangeStyleVal")
       };
 
@@ -934,16 +936,16 @@ class ChangeStaffUserDist : public UndoCommand {
 
 class ChangeProperty : public UndoCommand {
       ScoreElement* element;
-      P_ID id;
+      Pid id;
       QVariant property;
       PropertyFlags flags;
 
       void flip(EditData*) override;
 
    public:
-      ChangeProperty(ScoreElement* e, P_ID i, const QVariant& v, PropertyFlags ps = PropertyFlags::NOSTYLE)
+      ChangeProperty(ScoreElement* e, Pid i, const QVariant& v, PropertyFlags ps = PropertyFlags::NOSTYLE)
          : element(e), id(i), property(v), flags(ps) {}
-      P_ID getId() const  { return id; }
+      Pid getId() const  { return id; }
       UNDO_NAME("ChangeProperty")
       };
 
@@ -1118,15 +1120,18 @@ class ChangeNoteEvent : public UndoCommand {
 //---------------------------------------------------------
 
 class LinkUnlink : public UndoCommand {
-      ScoreElement* e;
-      ScoreElement* le;
+      bool mustDelete  { false };
 
    protected:
-      void doLink();
-      void doUnlink();
+      LinkedElements* le;
+      ScoreElement* e;
+
+      void link();
+      void unlink();
 
    public:
-      LinkUnlink(ScoreElement* _e, ScoreElement* _le) : e(_e), le(_le) {}
+      LinkUnlink() {}
+      ~LinkUnlink();
       };
 
 //---------------------------------------------------------
@@ -1134,11 +1139,10 @@ class LinkUnlink : public UndoCommand {
 //---------------------------------------------------------
 
 class Unlink : public LinkUnlink {
-
    public:
-      Unlink(ScoreElement* _e) : LinkUnlink(_e, 0) {}
-      virtual void undo(EditData*) override { doLink(); }
-      virtual void redo(EditData*) override { doUnlink(); }
+      Unlink(ScoreElement*);
+      virtual void undo(EditData*) override { link(); }
+      virtual void redo(EditData*) override { unlink(); }
       UNDO_NAME("Unlink")
       };
 
@@ -1147,14 +1151,14 @@ class Unlink : public LinkUnlink {
 //---------------------------------------------------------
 
 class Link : public LinkUnlink {
-
    public:
-      Link(ScoreElement* e, ScoreElement* le) : LinkUnlink(le, e) {}
-      virtual void undo(EditData*) override { doUnlink(); }
-      virtual void redo(EditData*) override { doLink();   }
+      Link(ScoreElement*, ScoreElement*);
+      virtual void undo(EditData*) override { unlink(); }
+      virtual void redo(EditData*) override { link();   }
       UNDO_NAME("Link")
       };
 
+#if 0
 //---------------------------------------------------------
 //   LinkStaff
 //---------------------------------------------------------
@@ -1165,10 +1169,11 @@ class LinkStaff : public UndoCommand {
 
    public:
       LinkStaff(Staff* _s1, Staff* _s2) : s1(_s1), s2(_s2) {}
-      virtual void undo(EditData*) override;
-      virtual void redo(EditData*) override;
+      virtual void undo(EditData*) override { s2->unlink(s1); } // s1 is removed
+      virtual void redo(EditData*) override { s1->linkTo(s2); } // s1 is added
       UNDO_NAME("LinkStaff")
       };
+
 
 //---------------------------------------------------------
 //   UnlinkStaff
@@ -1180,10 +1185,11 @@ class UnlinkStaff : public UndoCommand {
 
    public:
       UnlinkStaff(Staff* _s1, Staff* _s2) : s1(_s1), s2(_s2) {}
-      virtual void undo(EditData*) override;
-      virtual void redo(EditData*) override;
+      virtual void undo(EditData*) override { s2->linkTo(s1); } // s2 is added
+      virtual void redo(EditData*) override { s1->unlink(s2); } // s2 is removed
       UNDO_NAME("UnlinkStaff")
       };
+#endif
 
 //---------------------------------------------------------
 //   ChangeStartEndSpanner
@@ -1245,83 +1251,6 @@ class ChangeGap : public UndoCommand {
       ChangeGap(Rest* r, bool v) : rest(r), v(v) {}
       UNDO_NAME("ChangeGap")
       };
-
-//---------------------------------------------------------
-//   ChangeText
-//---------------------------------------------------------
-
-class ChangeText : public UndoCommand {
-      TextCursor c;
-      QString s;
-
-   protected:
-      void insertText(EditData*);
-      void removeText(EditData*);
-
-   public:
-      ChangeText(const TextCursor* tc, const QString& t) : c(*tc), s(t) {}
-      virtual void undo(EditData*) override = 0;
-      virtual void redo(EditData*) override = 0;
-      const TextCursor& cursor() const { return c; }
-      const QString& string() const    { return s; }
-      };
-
-//---------------------------------------------------------
-//   InsertText
-//---------------------------------------------------------
-
-class InsertText : public ChangeText {
-
-   public:
-      InsertText(const TextCursor* tc, const QString& t) : ChangeText(tc, t) {}
-      virtual void redo(EditData* ed) override { insertText(ed); }
-      virtual void undo(EditData* ed) override { removeText(ed); }
-      UNDO_NAME("InsertText")
-      };
-
-//---------------------------------------------------------
-//   RemoveText
-//---------------------------------------------------------
-
-class RemoveText : public ChangeText {
-
-   public:
-      RemoveText(const TextCursor* tc, const QString& t) : ChangeText(tc, t) {}
-      virtual void redo(EditData* ed) override { removeText(ed); }
-      virtual void undo(EditData* ed) override { insertText(ed); }
-      UNDO_NAME("InsertText")
-      };
-
-//---------------------------------------------------------
-//   SplitText
-//---------------------------------------------------------
-
-class SplitText : public UndoCommand {
-      TextCursor c;
-
-      virtual void undo(EditData*) override;
-      virtual void redo(EditData*) override;
-
-   public:
-      SplitText(const TextCursor* tc) : c(*tc) {}
-      UNDO_NAME("SplitText");
-      };
-
-//---------------------------------------------------------
-//   JoinText
-//---------------------------------------------------------
-
-class JoinText : public UndoCommand {
-      TextCursor c;
-
-      virtual void undo(EditData*) override;
-      virtual void redo(EditData*) override;
-
-   public:
-      JoinText(const TextCursor* tc) : c(*tc) {}
-      UNDO_NAME("JoinText");
-      };
-
 
 }     // namespace Ms
 #endif

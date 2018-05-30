@@ -5,6 +5,7 @@
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
+      <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -67,25 +68,25 @@
           <sigN>5</sigN>
           <sigD>4</sigD>
           </TimeSig>
-        <Tempo>
-          <tempo>2</tempo>
-          <lid>4</lid>
-          <text><sym>metNoteQuarterUp</sym> = 120</text>
-          </Tempo>
         <Dynamic>
           <subtype>mf</subtype>
           <velocity>80</velocity>
-          <lid>5</lid>
+          <lid>4</lid>
           </Dynamic>
+        <Tempo>
+          <tempo>2</tempo>
+          <lid>5</lid>
+          <text><sym>metNoteQuarterUp</sym> = 120</text>
+          </Tempo>
         <Chord>
-          <lid>7</lid>
+          <lid>6</lid>
           <durationType>quarter</durationType>
           <Articulation>
             <subtype>stringsDownBow</subtype>
-            <lid>6</lid>
+            <lid>8</lid>
             </Articulation>
           <Note>
-            <lid>8</lid>
+            <lid>7</lid>
             <pitch>62</pitch>
             <tpc>16</tpc>
             <fret>7</fret>
@@ -104,14 +105,14 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>12</lid>
+          <lid>11</lid>
           <durationType>quarter</durationType>
           <Articulation>
             <subtype>stringsUpBow</subtype>
-            <lid>11</lid>
+            <lid>13</lid>
             </Articulation>
           <Note>
-            <lid>13</lid>
+            <lid>12</lid>
             <pitch>47</pitch>
             <tpc>19</tpc>
             <fret>2</fret>
@@ -136,7 +137,7 @@
       <currentLayer>0</currentLayer>
       <Division>480</Division>
       <Style>
-        <createMultiMeasureRests>1</createMultiMeasureRests>
+        <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
@@ -218,25 +219,25 @@
             <sigN>5</sigN>
             <sigD>4</sigD>
             </TimeSig>
-          <Tempo>
-            <tempo>2</tempo>
-            <lid>4</lid>
-            <text><sym>metNoteQuarterUp</sym> = 120</text>
-            </Tempo>
           <Dynamic>
             <subtype>mf</subtype>
             <velocity>80</velocity>
-            <lid>5</lid>
+            <lid>4</lid>
             </Dynamic>
+          <Tempo>
+            <tempo>2</tempo>
+            <lid>5</lid>
+            <text><sym>metNoteQuarterUp</sym> = 120</text>
+            </Tempo>
           <Chord>
-            <lid>7</lid>
+            <lid>6</lid>
             <durationType>quarter</durationType>
             <Articulation>
               <subtype>stringsDownBow</subtype>
-              <lid>6</lid>
+              <lid>8</lid>
               </Articulation>
             <Note>
-              <lid>8</lid>
+              <lid>7</lid>
               <pitch>62</pitch>
               <tpc>16</tpc>
               <fret>7</fret>
@@ -255,14 +256,14 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>12</lid>
+            <lid>11</lid>
             <durationType>quarter</durationType>
             <Articulation>
               <subtype>stringsUpBow</subtype>
-              <lid>11</lid>
+              <lid>13</lid>
               </Articulation>
             <Note>
-              <lid>13</lid>
+              <lid>12</lid>
               <pitch>47</pitch>
               <tpc>19</tpc>
               <fret>2</fret>
@@ -289,14 +290,14 @@
             <accidental>0</accidental>
             </KeySig>
           <Chord>
-            <lid>7</lid>
+            <lid>6</lid>
             <durationType>quarter</durationType>
             <Articulation>
               <subtype>stringsDownBow</subtype>
-              <lid>6</lid>
+              <lid>8</lid>
               </Articulation>
             <Note>
-              <lid>8</lid>
+              <lid>7</lid>
               <pitch>62</pitch>
               <tpc>16</tpc>
               <fret>7</fret>
@@ -315,14 +316,14 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>12</lid>
+            <lid>11</lid>
             <durationType>quarter</durationType>
             <Articulation>
               <subtype>stringsUpBow</subtype>
-              <lid>11</lid>
+              <lid>13</lid>
               </Articulation>
             <Note>
-              <lid>13</lid>
+              <lid>12</lid>
               <pitch>47</pitch>
               <tpc>19</tpc>
               <fret>2</fret>

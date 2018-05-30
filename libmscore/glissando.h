@@ -15,6 +15,7 @@
 
 #include "element.h"
 #include "line.h"
+#include "property.h"
 
 namespace Ms {
 
@@ -23,57 +24,44 @@ static const qreal      GLISS_STARTOFSYSTEM_WIDTH = 4;      // in sp
 
 class Glissando;
 class Note;
+enum class GlissandoType;
 
 //---------------------------------------------------------
 //   @@ GlissandoSegment
 //---------------------------------------------------------
 
-class GlissandoSegment : public LineSegment {
-      Q_GADGET
-
-   protected:
-
+class GlissandoSegment final : public LineSegment {
    public:
       GlissandoSegment(Score* s) : LineSegment(s)           {}
-      Glissando* glissando() const                          { return (Glissando*)spanner(); }
-      virtual ElementType type() const override           { return ElementType::GLISSANDO_SEGMENT; }
+      Glissando* glissando() const                          { return toGlissando(spanner()); }
+      virtual ElementType type() const override             { return ElementType::GLISSANDO_SEGMENT; }
       virtual GlissandoSegment* clone() const override      { return new GlissandoSegment(*this); }
       virtual void draw(QPainter*) const override;
       virtual void layout() override;
 
-      virtual QVariant getProperty(P_ID id) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID id) const override;
+      virtual QVariant getProperty(Pid id) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid id) const override;
+      virtual PropertyFlags& propertyFlags(Pid) override;
+      virtual void setPropertyFlags(Pid id, PropertyFlags f) override;
+      virtual Sid getPropertyStyle(Pid) const override;
       };
 
 //---------------------------------------------------------
-//   @@ Glissando
-//   @P glissandoType  enum (Glissando.STRAIGHT, Glissando.WAVY)
-//   @P showText       bool
-//   @P text           string
+//   Glissando
 //---------------------------------------------------------
 
-class Glissando : public SLine {
-      Q_GADGET
-
-      Q_PROPERTY(Ms::Glissando::Type glissandoType READ glissandoType  WRITE undoSetGlissandoType)
-      Q_PROPERTY(QString text                      READ text     WRITE undoSetText)
-      Q_PROPERTY(bool showText                     READ showText WRITE undoSetShowText)
-      Q_ENUMS(Type)
-
-  public:
-      enum class Type : char {
-            STRAIGHT, WAVY
-            };
-
-   private:
-      Type _glissandoType;
-      QString _text;
-      bool _showText;
-      MScore::GlissandoStyle _glissandoStyle;
-      bool _playGlissando;
-
-   protected:
+class Glissando final : public SLine {
+      M_PROPERTY(QString, text, setText)
+      M_PROPERTY(GlissandoType, glissandoType, setGlissandoType)
+      M_PROPERTY(GlissandoStyle, glissandoStyle, setGlissandoStyle)
+      M_PROPERTY(QString, fontFace, setFontFace)
+      M_PROPERTY(qreal, fontSize, setFontSize)
+      M_PROPERTY(bool, showText, setShowText)
+      M_PROPERTY(bool, playGlissando, setPlayGlissando)
+      M_PROPERTY(bool, fontBold, setFontBold)
+      M_PROPERTY(bool, fontItalic, setFontItalic)
+      M_PROPERTY(bool, fontUnderline, setFontUnderline)
 
    public:
       Glissando(Score* s);
@@ -82,8 +70,8 @@ class Glissando : public SLine {
       static Note* guessInitialNote(Chord* chord);
       static Note* guessFinalNote(Chord* chord);
 
-      // overriden inherited methods
-      virtual Glissando* clone() const override       { return new Glissando(*this); }
+      // overridden inherited methods
+      virtual Glissando* clone() const override     { return new Glissando(*this);   }
       virtual ElementType type() const override     { return ElementType::GLISSANDO; }
       virtual LineSegment* createLineSegment() override;
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
@@ -91,32 +79,14 @@ class Glissando : public SLine {
       virtual void write(XmlWriter&) const override;
       virtual void read(XmlReader&) override;
 
-      // Glissando specific methods
-      Type glissandoType() const          { return _glissandoType;}
-      void setGlissandoType(Type v)       { _glissandoType = v;   }
-      MScore::GlissandoStyle glissandoStyle() const { return _glissandoStyle;}
-      void setGlissandoStyle(MScore::GlissandoStyle s) { _glissandoStyle = s; }
-      bool playGlissando() const          { return _playGlissando;}
-      void setPlayGlissando(bool v)       { _playGlissando = v; }
-      QString text() const                { return _text;         }
-      void setText(const QString& t)      { _text = t;            }
-      bool showText() const               { return _showText;     }
-      void setShowText(bool v)            { _showText = v;        }
-
-      void undoSetGlissandoType(Type);
-      void undoSetText(const QString&);
-      void undoSetShowText(bool);
-
-      // property methods
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      // property/style methods
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool     setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
       };
 
 
 }     // namespace Ms
-
-Q_DECLARE_METATYPE(Ms::Glissando::Type);
 
 #endif
 

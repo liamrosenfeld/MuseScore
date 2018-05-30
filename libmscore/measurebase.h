@@ -59,15 +59,6 @@ constexpr bool operator& (Repeat t1, Repeat t2) {
 //---------------------------------------------------------
 
 class MeasureBase : public Element {
-      Q_GADGET
-
-      Q_PROPERTY(bool         lineBreak         READ lineBreak   WRITE undoSetLineBreak)
-      Q_PROPERTY(Ms::Measure* nextMeasure       READ nextMeasure)
-      Q_PROPERTY(Ms::Measure* nextMeasureMM     READ nextMeasureMM)
-      Q_PROPERTY(bool         pageBreak         READ pageBreak   WRITE undoSetPageBreak)
-      Q_PROPERTY(Ms::Measure* prevMeasure       READ prevMeasure)
-      Q_PROPERTY(Ms::Measure* prevMeasureMM     READ prevMeasureMM)
-
       MeasureBase* _next    { 0 };
       MeasureBase* _prev    { 0 };
 
@@ -134,9 +125,9 @@ class MeasureBase : public Element {
 
       qreal pause() const;
 
-      virtual QVariant getProperty(P_ID) const override;
-      virtual bool setProperty(P_ID, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid) const override;
+      virtual bool setProperty(Pid, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       void clearElements();
       ElementList takeElements();

@@ -27,9 +27,7 @@ enum class ArpeggioType : char {
 //   @@ Arpeggio
 //---------------------------------------------------------
 
-class Arpeggio : public Element {
-      Q_GADGET
-
+class Arpeggio final : public Element {
       ArpeggioType _arpeggioType;
       qreal _userLen1;
       qreal _userLen2;
@@ -37,6 +35,8 @@ class Arpeggio : public Element {
       int _span;              // spanning staves
       std::vector<SymId> symbols;
       bool _playArpeggio;
+
+      bool _hidden = false; // set in layout, will skip draw if true
 
       void symbolLine(SymId start, SymId fill);
       void symbolLine2(SymId end, SymId fill);
@@ -48,7 +48,7 @@ class Arpeggio : public Element {
 
    public:
       Arpeggio(Score* s);
-      virtual Arpeggio* clone() const override      { return new Arpeggio(*this); }
+      virtual Arpeggio* clone() const override    { return new Arpeggio(*this); }
       virtual ElementType type() const override   { return ElementType::ARPEGGIO; }
 
       ArpeggioType arpeggioType() const    { return _arpeggioType; }
@@ -80,9 +80,9 @@ class Arpeggio : public Element {
       bool playArpeggio()       { return _playArpeggio; }
       void setPlayArpeggio(bool p) { _playArpeggio = p; }
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID propertyId) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid propertyId) const override;
       };
 
 
