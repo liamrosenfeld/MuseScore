@@ -680,6 +680,12 @@ if (APPLE)
       REGEX ".*_debug\\.dylib" EXCLUDE)
 endif (APPLE)
 
+# Add the appropriate splash screen for the build
+if (MSCORE_UNSTABLE)
+    cp -f /assets/splash-dev.png  mscore/data/splash.png # Dev splash on development builds
+else (MSCORE_UNSTABLE)
+    cp -f /assets/splash-stable.png  mscore/data/splash.png # Standard splash on stable releases
+endif (MSCORE_UNSTABLE)
+
 ADD_DEPENDENCIES(${ExecutableName} mops1)
 ADD_DEPENDENCIES(${ExecutableName} mops2)
-
